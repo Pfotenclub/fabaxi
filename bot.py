@@ -15,24 +15,31 @@ async def on_ready():
 if __name__ == '__main__':
     if os.path.isdir("commands"):
         os.chdir("commands")
+        print("Changed directory to commands")
     else:
         os.chdir("app/commands")
+        print("Changed directory to app/commands")
     for i in os.listdir():
         if i.endswith(".py"):
             try:
                 bot.load_extension(f"commands.{i[:-3]}")
+                print(f"{i} wurde geladen")
             except Exception as error:
                 print('{} konnte nicht geladen werden. [{}]'.format(i, error))
             else:
                 print(f"{i} wurde geladen")
     if os.path.isdir("./../events"):
+        print("Changed directory to events")
         os.chdir("./../events")
+        print("Changed directory to events")
     else:
         os.chdir("./../app/events")
+        print("Changed directory to app/events")
     for i in os.listdir():
         if i.endswith(".py"):
             try:
                 bot.load_extension(f"events.{i[:-3]}")
+                print(f"{i} wurde geladen")
             except Exception as error:
                 print('{} konnte nicht geladen werden. [{}]'.format(i, error))
             else:
