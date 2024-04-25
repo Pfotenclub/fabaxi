@@ -2,10 +2,10 @@ from discord.ext import commands
 import discord
 import os # default module
 from dotenv import load_dotenv
-
+print("Bot is starting...")
 load_dotenv() # load all the variables from the env file
 bot = commands.Bot(debug_guilds=[1056514064081231872], intents=discord.Intents.all())
-
+print("Bot is ready!")
 @bot.event
 async def on_ready():
     print(f"{bot.user} is ready and online!")
