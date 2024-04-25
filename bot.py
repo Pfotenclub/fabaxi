@@ -1,3 +1,4 @@
+print("Bot is starting...")
 from discord.ext import commands
 import discord
 import os # default module
