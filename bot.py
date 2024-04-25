@@ -16,7 +16,7 @@ if __name__ == '__main__':
     if os.path.isdir("commands"):
         os.chdir("commands")
     else:
-        os.chdir("commands")
+        os.chdir("app/commands")
     for i in os.listdir():
         if i.endswith(".py"):
             try:
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     if os.path.isdir("./../events"):
         os.chdir("./../events")
     else:
-        os.chdir("./../events")
+        os.chdir("./../app/events")
     for i in os.listdir():
         if i.endswith(".py"):
             try:
