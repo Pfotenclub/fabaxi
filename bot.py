@@ -29,7 +29,6 @@ if __name__ == '__main__':
         if i.endswith(".py"):
             try:
                 bot.load_extension(f"events.{i[:-3]}")
-                print(f"{i} wurde geladen")
             except Exception as error:
                 print('{} konnte nicht geladen werden. [{}]'.format(i, error))
             else:
