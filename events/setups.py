@@ -13,6 +13,8 @@ class Setups(commands.Cog): # create a class for our cog that inherits from comm
         for role_id in role_ids:
             role = discord.utils.get(member.guild.roles, id=role_id)
             await member.add_roles(role)
-
+    @commands.Cog.listener()
+    async def on_ready(self):
+        await self.bot.change_presence(activity=discord.Game(name="Toasting..."))
 def setup(bot): # this is called by Pycord to setup the cog
     bot.add_cog(Setups(bot)) # add the cog to the bot
