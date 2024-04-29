@@ -9,7 +9,7 @@ class StatusPageUpdate(commands.Cog):
     def cog_unload(self):
         self.update_status.cancel()
 
-    @tasks.loop(seconds=19.0)
+    @tasks.loop(seconds=299.0)
     async def update_status(self):
         requests.get('https://klara.wolfiii.gay/api/push/FfkEDcIxAt?status=up&msg=OK&ping=')
 
