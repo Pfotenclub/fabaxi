@@ -34,5 +34,19 @@ if __name__ == '__main__':
             else:
                 print(f"{i} wurde geladen")
 
+    if os.path.isdir("./../temp-voice"): # if the temp-voice folder exists
+        os.chdir("./../temp-voice") # change the directory to the temp-voice folder
+    else:
+        os.chdir("./../temp-voice") # change the directory to the app/temp-voice folder
+    for i in os.listdir(): # for every file in the directory
+        if i.endswith(".py"): # if the file is a python file
+            try:
+                bot.load_extension(f"temp-voice.{i[:-3]}") # load the extension
+            except Exception as error: # if there is an error
+                print('{} konnte nicht geladen werden. [{}]'.format(i, error)) # print the error
+            else:
+                print(f"{i} wurde geladen") # print that the file was loaded
+
+
 bot.run(os.getenv('TOKEN')) # run the bot with the token
 
