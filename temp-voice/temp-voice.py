@@ -11,8 +11,8 @@ class TempVoice(commands.Cog): # create a class for our cog that inherits from c
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        joinToCreateVoice = 1229081255115624549 # the voice channel id that will be used to create the channel - Tri Server
-        joinToCreateParent = 1058459667887575131 # the category id where the channel will be created - Tri Server
+        joinToCreateVoice = 1229081255115624549 # the voice channel id that will be used to create the channel - Pfotenclub Server
+        joinToCreateParent = 1058459667887575131 # the category id where the channel will be created - Pfotenclub Server
         #joinToCreateVoice = 1234040036299640844 # the voice channel id that will be used to create the channel - Wolfiiis Server
         #joinToCreateParent = 1234039999775772768 # the category id where the channel will be created - Wolfiiis Server
 
