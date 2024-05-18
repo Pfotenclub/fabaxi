@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import random
 from flask import Flask, request
 import threading
@@ -24,6 +24,10 @@ class Setups(commands.Cog): # create a class for our cog that inherits from comm
 
     def __init__(self, bot): # this is a special method that is called when the cog is loaded
         self.bot = bot
+        self.change_status.start()
+
+    def cog_unload(self):
+        self.change_status.cancel()
 
     @commands.Cog.listener() # we can add event listeners to our cog
     async def on_member_join(self, member): # this is called when a member joins the server
@@ -31,9 +35,9 @@ class Setups(commands.Cog): # create a class for our cog that inherits from comm
         for role_id in role_ids:
             role = discord.utils.get(member.guild.roles, id=role_id)
             await member.add_roles(role)
-    @commands.Cog.listener()
-    async def on_ready(self):
-        threading.Thread(target=run).start()
+
+    @tasks.loop(minutes=5)
+    async def change_status(self):
         stati = [
             "Toasting...",
             "Toaster-Modus aktiviert!",
@@ -80,5 +84,14 @@ class Setups(commands.Cog): # create a class for our cog that inherits from comm
         ]
         random.shuffle(stati)
         await self.bot.change_presence(activity=discord.CustomActivity(name=random.choice(stati)))
+
+    @change_status.before_loop
+    async def before_change_status(self):
+        await self.bot.wait_until_ready()
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        threading.Thread(target=run).start()
+        
 def setup(bot): # this is called by Pycord to setup the cog
     bot.add_cog(Setups(bot)) # add the cog to the bot
