@@ -16,7 +16,7 @@ class Setups(commands.Cog): # create a class for our cog that inherits from comm
     @commands.Cog.listener()
     async def on_ready(self):
         stati = [
-            
+            "Toasting..."
         ]
         await self.bot.change_presence(activity=discord.Game(name="Toasting..."))
 def setup(bot): # this is called by Pycord to setup the cog
