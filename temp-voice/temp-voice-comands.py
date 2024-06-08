@@ -21,21 +21,22 @@ class TempVoiceInterface(discord.ui.Button): # Button for the Temp Voice Interfa
 
     async def callback(self, interaction: discord.Interaction): # when the button is clicked
         cmdId = int(self.custom_id) # get the command id
+        noVoiceChannelText = "You don't have a temporary voice channel!"
         if cmdId == 0: # if the command id is 0
             if not memberIsChannelOwner(interaction.user): # if the member is not the channel owner
-                return await interaction.response.send_message("Du hast keinen temporären Sprachkanal!", ephemeral=True) # send a message that the member does not have a temporary voice channel
-            await interaction.response.send_modal(RenameChannel(title="Benenne Sprachkanal um")) # send the rename channel modal
+                return await interaction.response.send_message(noVoiceChannelText, ephemeral=True) # send a message that the member does not have a temporary voice channel
+            await interaction.response.send_modal(RenameChannel(title="Rename your voice channel")) # send the rename channel modal
         elif cmdId == 1: # if the command id is 1
             if not memberIsChannelOwner(interaction.user): # if the member is not the channel owner
-                return await interaction.response.send_message("Du hast keinen temporären Sprachkanal!", ephemeral=True) # send a message that the member does not have a temporary voice channel
-            await interaction.response.send_modal(LimitChannel(title="Setze Nutzerlimit")) # send the limit channel modal
+                return await interaction.response.send_message(noVoiceChannelText, ephemeral=True) # send a message that the member does not have a temporary voice channel
+            await interaction.response.send_modal(LimitChannel(title="Set Userlimit")) # send the limit channel modal
         elif cmdId == 2: # if the command id is 2
             if not memberIsChannelOwner(interaction.user): # if the member is not the channel owner
-                return await interaction.response.send_message("Du hast keinen temporären Sprachkanal!", ephemeral=True) # send a message that the member does not have a temporary voice channel
+                return await interaction.response.send_message(noVoiceChannelText, ephemeral=True) # send a message that the member does not have a temporary voice channel
             await LockChannel().callback(interaction) # lock the channel
         elif cmdId == 3: # if the command id is 3
             if not memberIsChannelOwner(interaction.user): # if the member is not the channel owner
-                return await interaction.response.send_message("Du hast keinen temporären Sprachkanal!", ephemeral=True) # send a message that the member does not have a temporary voice channel
+                return await interaction.response.send_message(noVoiceChannelText, ephemeral=True) # send a message that the member does not have a temporary voice channel
             await UnlockChannel().callback(interaction) # unlock the channel
         elif cmdId == 4: # if the command id is 4
             await ClaimChannel().callback(interaction) # claim the channel
@@ -44,20 +45,20 @@ class TempVoiceCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.slash_command(name="temp-voice-interface", guild_ids=[1056514064081231872], description="Sendet die Nachricht für das Sprachkanal Interface. (Nur für Bot Owner)") # Pfotenclub Server
+    @commands.slash_command(name="temp-voice-interface", guild_ids=[1056514064081231872], description="Sends the message for the voicechannel Interface (Only Bot Owner)") # Pfotenclub Server
     #@commands.slash_command(name="temp-voice-interface", guild_ids=[1001916230069911703], description="Sendet die Nachricht für das Sprachkanal Interface. (Nur für Bot Owner)") # Wolfiiis Server
     async def rolebutton(self, ctx: discord.ApplicationContext): # when the command is called
         if ctx.author.id != 327880195476422656: # if the author is not the bot owner
-            return await ctx.respond("Du bist nicht der Bot Owner!", ephemeral=True) # send a message that the author is not the bot owner
+            return await ctx.respond("You are not the Bot Owner!", ephemeral=True) # send a message that the author is not the bot owner
         view = discord.ui.View(timeout=None) # create a view
 
         embed = discord.Embed( # create an embed
             title="Temp Voice Interface", # set the title
-            description="Dieses Interface kann genutzt werden um deinen temporären Sprachkanal zu konfigurieren!", # set the description
+            description="This Interface can be used to configure the temporary voice channels!", # set the description
             color=discord.Color.blurple() # set the color
         )
 
-        embed.set_footer(text="⚙️ Klicke auf die Buttons um das Interface zu nutzen!") # set the footer
+        embed.set_footer(text="⚙️ Click on the buttons to use the interface!") # set the footer
 
         for cmdId in tempVoiceCmdIds: # for every command id
             view.add_item(TempVoiceInterface(cmdId)) # add the button to the view
@@ -74,8 +75,8 @@ class RenameChannel(discord.ui.Modal): # Modal for renaming the channel
     def __init__(self, *args, **kwargs) -> None: # when the modal is created
         super().__init__( # create the modal
             discord.ui.InputText( # create an input text
-                label="Wähle einen neuen Namen für deinen Kanal aus!", # set the label
-                placeholder="Leer lassen um den Namen zurückzusetzen", # set the placeholder
+                label="Choose a new name for your channel!", # set the label
+                placeholder="Leave blank to reset", # set the placeholder
                 required=False, # set required to false
             ),
             *args,
@@ -91,8 +92,8 @@ class RenameChannel(discord.ui.Modal): # Modal for renaming the channel
                 await channel.edit(name=f"{interaction.user.display_name}'s Channel") # set the name to the default name
 
         embed = discord.Embed( # create an embed
-            title="Update erfolgreich!", # set the title
-            description=f"Dein Kanal hat nun den Namen {channel.name}!", # set the description
+            title="Update successful!", # set the title
+            description=f"Your channel is now named {channel.name}!", # set the description
         color=discord.Color.embed_background(), # set the color
         )
         await interaction.response.send_message(embeds=[embed], ephemeral=True) # send the embed
@@ -101,8 +102,8 @@ class LimitChannel(discord.ui.Modal): # Modal for setting the user limit
     def __init__(self, *args, **kwargs) -> None: # when the modal is created
         super().__init__( # create the modal
             discord.ui.InputText(  # create an input text
-                label="Wähle das neue Limit für deinen Kanal aus!", # set the label
-                placeholder="Leer lassen um das Limit zurückzusetzen", # set the placeholder
+                label="Choose the new limit for your channel!", # set the label
+                placeholder="Leave blank to reset the limit", # set the placeholder
                 required=False, # set required to false
                 max_length=2, # set the max length to 2
             ),
@@ -118,10 +119,10 @@ class LimitChannel(discord.ui.Modal): # Modal for setting the user limit
                 channel = getTempChannelFromMember(interaction.user) # get the channel
                 await channel.edit(user_limit=int(self.children[0].value)) # set the limit to the value
             else:
-                return await interaction.response.send_message("Bitte gebe eine gültige Zahl ein! (1 - 99)", ephemeral=True) # send a message that the value is not a number
+                return await interaction.response.send_message("Please enter a valid number! (1 - 99)", ephemeral=True) # send a message that the value is not a number
             embed = discord.Embed( # create an embed
-                    title="Update erfolgreich!", # set the title
-                    description=f"Dein Kanal hat nun ein Limit von {interaction.user.voice.channel.user_limit}!", # set the description
+                    title="Update successful!", # set the title
+                    description=f"Your channel now has a limit of {interaction.user.voice.channel.user_limit}!", # set the description
                     color=discord.Color.embed_background(), # set the color
                 )
             await interaction.response.send_message(embeds=[embed], ephemeral=True) # send the embed
@@ -130,15 +131,15 @@ class ClaimChannel():
     async def callback(self, interaction: discord.Interaction): # when the command is called
         
         if interaction.user.voice is None: # if the user is not in a voice channel
-            return await interaction.response.send_message("Du musst in einem Sprachkanal sein um einen temporären Sprachkanal zu claimen!", ephemeral=True) # send a message that the user has to be in a voice channel
+            return await interaction.response.send_message("You must be in a voice channel to claim a temporary voice channel!", ephemeral=True) # send a message that the user has to be in a voice channel
         elif memberIsChannelOwner(interaction.user): # if the member is the channel owner
-            return await interaction.response.send_message("Du hast bereits einen temporären Sprachkanal!", ephemeral=True) # send a message that the member already has a temporary voice channel
+            return await interaction.response.send_message("You already have a temporary voice channel!", ephemeral=True) # send a message that the member already has a temporary voice channel
 
         channel_id, member_id = pickle.load(open(f"temp-voice-ids/{interaction.user.voice.channel.id}.pkl", "rb")) # get the channel id and member id
 
         for member in interaction.user.voice.channel.members: # for every member in the channel
             if member.id == member_id: # if the member id is the same as the member id
-                return await interaction.response.send_message("Der Channel Owner ist bereits im temporären Sprachkanal!", ephemeral=True) # send a message that the channel owner is already in the channel
+                return await interaction.response.send_message("The channel owner is already in the temporary voice channel!", ephemeral=True) # send a message that the channel owner is already in the channel
         
         os.remove(f"temp-voice-ids/{channel_id}.pkl") # remove the file
         pickle.dump((channel_id, member.id), open(f"temp-voice-ids/{channel_id}.pkl", "wb")) # dump the new file
@@ -146,8 +147,8 @@ class ClaimChannel():
         await interaction.user.voice.channel.edit(name=f"{interaction.user.display_name}'s Channel") # set the name of the channel to the member's name
 
         embed = discord.Embed( # create an embed
-            title="Temporärer Sprachkanal geclaimed!", # set the title
-            description="Du hast den temporären Sprachkanal erfolgreich geclaimed!", # set the description
+            title="Temporary voice channel claimed!", # set the title
+            description="You have successfully claimed the temporary voice channel!", # set the description
             color=discord.Color.blurple() # set the color
         )
         await interaction.response.send_message(embed=embed, ephemeral=True) # send the embed
@@ -158,8 +159,8 @@ class LockChannel():
         channel = getTempChannelFromMember(interaction.user) # get the channel
         await channel.set_permissions(interaction.guild.default_role, connect=False) # set the permissions
         embed = discord.Embed( # create an embed
-            title="Update erfolgreich!", # set the title
-            description="Dein temporärer Sprachkanal wurde erfolgreich gesperrt!", # set the description
+            title="Update successful!", # set the title
+            description="Your temporary voice channel has been successfully locked!", # set the description
             color=discord.Color.blurple() # set the color
         )
         await interaction.response.send_message(embed=embed, ephemeral=True) # send the embed
@@ -170,8 +171,8 @@ class UnlockChannel(): # when the command is called
         channel = getTempChannelFromMember(interaction.user) # get the channel
         await channel.set_permissions(interaction.guild.default_role, connect=True) # set the permissions
         embed = discord.Embed( # create an embed
-            title="Update erfolgreich!", # set the title
-            description="Dein temporärer Sprachkanal wurde erfolgreich entsperrt!", # set the description
+            title="Update successful!", # set the title
+            description="Your temporary voice channel has been successfully unlocked!", # set the description
             color=discord.Color.blurple() # set the color
         )
         await interaction.response.send_message(embed=embed, ephemeral=True) # send the embed
