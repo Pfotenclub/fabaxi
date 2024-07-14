@@ -1,11 +1,16 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import aiosqlite
 
 class Karma(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.db_path = "./../data/karma.db"
+        self.rewards_db_path = "./../data/rewards.db"
+        self.give_voice_karma.start()
+    
+    def cog_unload(self):
+        self.give_voice_karma.cancel()
     
     @discord.Cog.listener()
     async def on_guild_join(self, guild):
@@ -28,6 +33,7 @@ class Karma(commands.Cog):
                 elif row[2] < message.created_at.timestamp() - 60: # If user has an entry, but hasn't sent a message in the last minute, give them karma
                     await db.execute("UPDATE guild_{0} SET karma = karma + 1, timestamplastmessage = ? WHERE user_id = ?".format(guild_id), (message.created_at.timestamp(), message.author.id))
                     await db.commit()
+                    give_rewards(self, guild_id, message.author.id)
             async with db.execute("SELECT * FROM guild_{0}".format(guild_id)) as cursor: # Print all entries
                 async for row in cursor:
                     print(row)
@@ -51,13 +57,13 @@ class Karma(commands.Cog):
             async with db.execute("SELECT * FROM guild_{0} WHERE user_id = ?".format(guild_id), (message_author.id,)) as cursor:
                 row = await cursor.fetchone()
                 if emoji_id == 1199472652721586298: # When the user reacts with the upvote emoji
-                    await db.execute("UPDATE guild_{0} SET karma = karma + 1 WHERE user_id = ?".format(guild_id), (message_author.id,))
+                    await db.execute("UPDATE guild_{0} SET karma = karma + 10 WHERE user_id = ?".format(guild_id), (message_author.id,))
                     await db.commit()
-                    print("Upvoted")
+                    give_rewards(self, guild_id, message_author.id)
                 elif emoji_id == 1199472654185418752: # When the user reacts with the downvote emoji
                     if row[1] == 0:
                         return print("Downvoted but no karma to remove")
-                    await db.execute("UPDATE guild_{0} SET karma = karma - 1 WHERE user_id = ?".format(guild_id), (message_author.id,))
+                    await db.execute("UPDATE guild_{0} SET karma = karma - 10 WHERE user_id = ?".format(guild_id), (message_author.id,))
                     await db.commit()
                     print("Downvoted")
 
@@ -81,18 +87,38 @@ class Karma(commands.Cog):
                 if emoji_id == 1199472652721586298: # When the user removes the upvote emoji
                     if row[1] == 0:
                         return print("Upvote removed but no karma to remove")
-                    await db.execute("UPDATE guild_{0} SET karma = karma - 1 WHERE user_id = ?".format(guild_id), (message_author.id,))
+                    await db.execute("UPDATE guild_{0} SET karma = karma - 10 WHERE user_id = ?".format(guild_id), (message_author.id,))
                     await db.commit()
                     print("Upvote removed")
                 elif emoji_id == 1199472654185418752: # When the user removes the downvote emoji
-                    await db.execute("UPDATE guild_{0} SET karma = karma + 1 WHERE user_id = ?".format(guild_id), (message_author.id,))
+                    await db.execute("UPDATE guild_{0} SET karma = karma + 10 WHERE user_id = ?".format(guild_id), (message_author.id,))
                     await db.commit()
                     print("Downvote removed")
-        
+    
+    @tasks.loop(minutes=1)
+    async def give_voice_karma(self):
+        print("Looping")
+        for guild in self.bot.guilds:
+            for channel in guild.voice_channels:
+                real_users = [member for member in channel.members if not member.bot]
+                if len(real_users) >= 2:
+                    active_users = [member for member in real_users if member.voice.self_mute == False and member.voice.self_deaf == False]
+                    if len(active_users) >= 2:
+                        for user in active_users:
+                            print("User: {0}".format(user))
+                            async with aiosqlite.connect(self.db_path) as db:
+                                async with db.execute("SELECT * FROM guild_{0} WHERE user_id = ?".format(guild.id), (user.id,)) as cursor:
+                                    row = await cursor.fetchone()
+                                    if row is None:
+                                        await db.execute("INSERT INTO guild_{0} (user_id, karma, timestamplastmessage) VALUES (?, 1, ?)".format(guild.id), (user.id, discord.utils.utcnow().timestamp()))
+                                        await db.commit()
+                                    elif row[2] < discord.utils.utcnow().timestamp() - 60:
+                                        await db.execute("UPDATE guild_{0} SET karma = karma + 1, timestamplastmessage = ? WHERE user_id = ?".format(guild.id), (discord.utils.utcnow().timestamp(), user.id))
+                                        await db.commit()
+
     @discord.Cog.listener()
     async def on_ready(self):
-        await setup_db(self, self.db_path) # Setup the database
-        
+        await setup_db(self, self.db_path, self.rewards_db_path) # Setup the database
 
     @discord.slash_command(name="karma", description="Check your karma!")
     async def getkarma(
@@ -199,7 +225,37 @@ class Karma(commands.Cog):
                     await db.commit()
                     await ctx.respond(f"Removed {amount} karma from {user.display_name}!")
 
-async def setup_db(self, db_path):
+    @discord.slash_command(name="addreward", description="Add a role reward!")
+    async def addreward(
+        self,
+        ctx,
+        role: discord.Option(discord.Role, description="The role to add as a reward", required=True), # type: ignore
+        karma_needed: discord.Option(int, description="The amount of karma needed to get the role", required=True) # type: ignore
+    ):
+        if not ctx.author.guild_permissions.administrator:
+            await ctx.respond("You must be an administrator to add rewards!", ephemeral=True)
+            return
+        await ctx.defer()
+        guild_id = ctx.guild.id
+        async with aiosqlite.connect(self.rewards_db_path) as db:
+            async with db.execute("SELECT * FROM guild_{0} WHERE role_id = ?".format(guild_id), (role.id,)) as cursor:
+                row = await cursor.fetchone()
+                if row is not None:
+                    await ctx.respond("This role is already added as a reward!")
+                    return
+                await db.execute("INSERT INTO guild_{0} (role_id, karma_needed) VALUES (?, ?)".format(guild_id), (role.id, karma_needed))
+                await db.commit()
+        await ctx.respond(f"Added {role.name} as a reward for {karma_needed}!")
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute("SELECT user_id FROM guild_{0} WHERE karma >= ?".format(guild_id), (karma_needed,)) as cursor:
+                rows = await cursor.fetchall()
+                for row in rows:
+                    user_id = row[0]
+                    member = ctx.guild.get_member(user_id)
+                    if member:
+                        await member.add_roles(role)
+
+async def setup_db(self, db_path, rewards_db_path):
     async with aiosqlite.connect(db_path) as db:
         for guild in self.bot.guilds:
             await db.execute("CREATE TABLE IF NOT EXISTS guild_{0} (user_id INTEGER PRIMARY KEY, karma INTEGER DEFAULT 0, timestamplastmessage INTEGER)".format(guild.id))
@@ -210,6 +266,15 @@ async def setup_db(self, db_path):
                         if row is None:
                             await db.execute("INSERT INTO guild_{0} (user_id, karma, timestamplastmessage) VALUES (?, 0, 0)".format(guild.id), (member.id,))
             await db.commit()
+    async with aiosqlite.connect(rewards_db_path) as db:
+        for guild in self.bot.guilds:
+            await db.execute("CREATE TABLE IF NOT EXISTS guild_{0} (role_id INTEGER PRIMARY KEY, karma_needed INTEGER)".format(guild.id))
+
+def give_rewards(self, guild_id, user_id):
+    print("No rewards to give")
+
+def remove_rewards(self, guild_id, user_id):
+    print("No rewards to remove")
 
 def setup(bot):
     bot.add_cog(Karma(bot))
