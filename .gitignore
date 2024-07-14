@@ -3,4 +3,4 @@
 __pycache__/
 git_update.sh
 .vscode/
-data/karma.db
+data/
