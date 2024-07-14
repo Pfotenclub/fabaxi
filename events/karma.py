@@ -95,18 +95,32 @@ class Karma(commands.Cog):
         
 
     @discord.slash_command(name="karma", description="Check your karma!")
-    async def pull(self, ctx):
+    async def getkarma(
+        self,
+        ctx,
+        user: discord.Option(discord.Member, description="The user to check the karma of!", required=False) # type: ignore
+    ):
         await ctx.defer()
         guild_id = ctx.guild.id
         async with aiosqlite.connect(self.db_path) as db:
-            async with db.execute("SELECT karma FROM guild_{0} WHERE user_id = ?".format(guild_id), (ctx.author.id,)) as cursor:
-                row = await cursor.fetchone()
-                if row is None:
-                    karma = 0
-                else:
-                    karma = row[0]
-            await db.commit()
-        await ctx.respond(f"Your karma is {karma}!")
+            if user:
+                async with db.execute("SELECT karma FROM guild_{0} WHERE user_id = ?".format(guild_id), (user.id,)) as cursor:
+                    row = await cursor.fetchone()
+                    if row is None:
+                        karma = 0
+                    else:
+                        karma = row[0]
+                await db.commit()
+                await ctx.respond(f"{user.display_name}'s karma is {karma}!")
+            else:
+                async with db.execute("SELECT karma FROM guild_{0} WHERE user_id = ?".format(guild_id), (ctx.author.id,)) as cursor:
+                    row = await cursor.fetchone()
+                    if row is None:
+                        karma = 0
+                    else:
+                        karma = row[0]
+                await db.commit()
+                await ctx.respond(f"Your karma is {karma}!")
 
     @discord.slash_command(name="leaderboard", description="Check the karma leaderboard!")
     async def leaderboard(self, ctx):
