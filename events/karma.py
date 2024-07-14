@@ -112,7 +112,7 @@ class Karma(commands.Cog):
                                         await db.execute("INSERT INTO guild_{0} (user_id, karma, timestamplastmessage) VALUES (?, 1, ?)".format(guild.id), (user.id, discord.utils.utcnow().timestamp()))
                                         await db.commit()
                                     elif row[2] < discord.utils.utcnow().timestamp() - 60:
-                                        await db.execute("UPDATE guild_{0} SET karma = karma + 1, timestamplastmessage = ? WHERE user_id = ?".format(guild.id), (discord.utils.utcnow().timestamp(), user.id))
+                                        await db.execute("UPDATE guild_{0} SET karma = karma + 1 WHERE user_id = ?".format(guild.id), (user.id))
                                         await db.commit()
                                         await manage_karma_rewards(self, guild.id, user.id)
 
