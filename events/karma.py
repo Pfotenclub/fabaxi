@@ -15,6 +15,7 @@ class Karma(commands.Cog):
 
     @discord.Cog.listener()
     async def on_message(self, message):
+        print(message.content)
         if message.author.bot: # Ignore bots
             return
         guild_id = message.guild.id
@@ -31,6 +32,63 @@ class Karma(commands.Cog):
                 async for row in cursor:
                     print(row)
                 
+    @discord.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        guild = self.bot.get_guild(payload.guild_id)
+        channel = guild.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        message_author = message.author
+        #user = await self.bot.fetch_user(payload.member.id)
+        print("Recieved from {0}".format(message_author))
+        emoji_id = payload.emoji.id
+        if message_author.bot: # Ignore bots
+            return
+        if emoji_id != 1199472652721586298 and emoji_id != 1199472654185418752: # Ignore reactions that aren't the ones we're looking for
+            print("Ignoring")
+            return
+        guild_id = payload.guild_id
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute("SELECT * FROM guild_{0} WHERE user_id = ?".format(guild_id), (message_author.id,)) as cursor:
+                row = await cursor.fetchone()
+                if emoji_id == 1199472652721586298: # When the user reacts with the upvote emoji
+                    await db.execute("UPDATE guild_{0} SET karma = karma + 1 WHERE user_id = ?".format(guild_id), (message_author.id,))
+                    await db.commit()
+                    print("Upvoted")
+                elif emoji_id == 1199472654185418752: # When the user reacts with the downvote emoji
+                    if row[1] == 0:
+                        return print("Downvoted but no karma to remove")
+                    await db.execute("UPDATE guild_{0} SET karma = karma - 1 WHERE user_id = ?".format(guild_id), (message_author.id,))
+                    await db.commit()
+                    print("Downvoted")
+
+    @discord.Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        guild = self.bot.get_guild(payload.guild_id)
+        channel = guild.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        message_author = message.author
+        print("Recieved from {0}".format(message_author))
+        emoji_id = payload.emoji.id
+        if message_author.bot: # Ignore bots
+            return
+        if emoji_id != 1199472652721586298 and emoji_id != 1199472654185418752: # Ignore reactions that aren't the ones we're looking for
+            print("Ignoring")
+            return
+        guild_id = payload.guild_id
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute("SELECT * FROM guild_{0} WHERE user_id = ?".format(guild_id), (message_author.id,)) as cursor:
+                row = await cursor.fetchone()
+                if emoji_id == 1199472652721586298: # When the user removes the upvote emoji
+                    if row[1] == 0:
+                        return print("Upvote removed but no karma to remove")
+                    await db.execute("UPDATE guild_{0} SET karma = karma - 1 WHERE user_id = ?".format(guild_id), (message_author.id,))
+                    await db.commit()
+                    print("Upvote removed")
+                elif emoji_id == 1199472654185418752: # When the user removes the downvote emoji
+                    await db.execute("UPDATE guild_{0} SET karma = karma + 1 WHERE user_id = ?".format(guild_id), (message_author.id,))
+                    await db.commit()
+                    print("Downvote removed")
+        
     @discord.Cog.listener()
     async def on_ready(self):
         await setup_db(self, self.db_path) # Setup the database
@@ -126,7 +184,7 @@ class Karma(commands.Cog):
                     await db.execute("UPDATE guild_{0} SET karma = karma - ?, timestamplastmessage = ? WHERE user_id = ?".format(guild_id), (amount, discord.utils.utcnow().timestamp(), user.id))
                     await db.commit()
                     await ctx.respond(f"Removed {amount} karma from {user.display_name}!")
-                    
+
 async def setup_db(self, db_path):
     async with aiosqlite.connect(db_path) as db:
         for guild in self.bot.guilds:
