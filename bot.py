@@ -3,7 +3,8 @@ import discord
 import os # default module
 from dotenv import load_dotenv
 load_dotenv() # load all the variables from the env file
-bot = commands.Bot(debug_guilds=[1001916230069911703], intents=discord.Intents.all())
+#bot = commands.Bot(debug_guilds=[1001916230069911703], intents=discord.Intents.all())
+bot = commands.Bot(intents=discord.Intents.all())
 @bot.event
 async def on_ready():
     print(f"{bot.user} is ready and online!")
