@@ -20,7 +20,6 @@ class Karma(commands.Cog):
 
     @discord.Cog.listener()
     async def on_message(self, message):
-        print(message.content)
         if message.author.bot: # Ignore bots
             return
         guild_id = message.guild.id
@@ -120,6 +119,24 @@ class Karma(commands.Cog):
     async def on_ready(self):
         await setup_db(self, self.db_path, self.rewards_db_path) # Setup the database
 
+    @discord.slash_command(name="clear-leaderboard", description="Clear the karma leaderboard!")
+    async def clear_leaderboard(self, ctx):
+        if not ctx.author.guild_permissions.administrator: return await ctx.respond("You must be an administrator to clear the leaderboard!", ephemeral=True)
+        await ctx.defer()
+        guild_id = ctx.guild.id
+        guild_members = ctx.guild.members
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute("SELECT user_id FROM guild_{0}".format(guild_id)) as cursor:
+                rows = await cursor.fetchall()
+                for row in rows:
+                    user_id = row[0]
+                    member = ctx.guild.get_member(user_id)
+                    if member not in guild_members:
+                        print("Deleting {0}".format(member))
+                        await db.execute("DELETE FROM guild_{0} WHERE user_id = ?".format(guild_id), (user_id,))
+                await db.commit()
+        await ctx.respond("Leaderboard cleared!")
+
     @discord.slash_command(name="karma", description="Check your karma!")
     async def getkarma(
         self,
@@ -159,11 +176,11 @@ class Karma(commands.Cog):
                     rows = await cursor.fetchall()
                     for row in rows:
                         user = ctx.guild.get_member(row[0])
-                        embed.add_field(name=user.display_name, value=row[1], inline=False)
+                        embed.add_field(name=user, value=row[1], inline=False)
                 await db.commit()
             await ctx.respond(embed=embed)
         except Exception as e:
-            ctx.respond(f"An error occurred: {e}")
+            await ctx.respond(f"An error occurred: {e}", ephemeral=True)
 
     @discord.slash_command(name="givekarma", description="Give karma to a user!")
     async def givekarma(
