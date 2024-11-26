@@ -19,7 +19,7 @@ class RewardsTable(Base):
     karma_needed = Column(Integer, nullable=False)
 
 class Database:
-    def __init__(self, db_url="sqlite+aiosqlite:///./data/karma.db"):
+    def __init__(self, db_url="sqlite+aiosqlite:///./../data/karma.db"):
         self.engine = create_async_engine(db_url, future=True, echo=True)
         self.SessionLocal = sessionmaker(bind=self.engine, class_=AsyncSession, expire_on_commit=False)
 
