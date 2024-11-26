@@ -1,70 +1,151 @@
-import discord
 from discord.ext import commands, tasks
-import aiosqlite
+import discord
+from sqlalchemy import select, update, delete
+from database.karma_db import Database, KarmaTable, RewardsTable
+
 
 class Karma(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.db_path = "./../data/karma.db"
-        self.rewards_db_path = "./../data/rewards.db"
+        self.db = Database()
+        self.bot.loop.create_task(self.db.init_db())
         self.give_voice_karma.start()
-    
+
     def cog_unload(self):
         self.give_voice_karma.cancel()
-    
+
     @discord.Cog.listener()
     async def on_guild_join(self, guild):
-        async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("CREATE TABLE IF NOT EXISTS guild_{0} (user_id INTEGER PRIMARY KEY, karma INTEGER DEFAULT 0, timestamplastmessage INTEGER)".format(guild.id))
-            await db.commit()
+        async with self.db.get_session() as session:
+            for member in guild.members:
+                if not member.bot:
+                    result = await session.execute(
+                        select(KarmaTable).filter_by(user_id=member.id, guild_id=guild.id)
+                    )
+                    if result.scalars().first() is None:
+                        session.add(KarmaTable(user_id=member.id, guild_id=guild.id))
+            await session.commit()
 
     @discord.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot: # Ignore bots
+        if message.author.bot:
             return
         guild_id = message.guild.id
-        async with aiosqlite.connect(self.db_path) as db:
-            async with db.execute("SELECT * FROM guild_{0} WHERE user_id = ?".format(guild_id), (message.author.id,)) as cursor: # Get User's Entry
-                row = await cursor.fetchone()
-                if row is None: # If user doesn't have an entry, create one
-                    await db.execute("INSERT INTO guild_{0} (user_id, karma, timestamplastmessage) VALUES (?, 1, ?)".format(guild_id), (message.author.id, message.created_at.timestamp()))
-                    await db.commit()
-                elif row[2] < message.created_at.timestamp() - 60: # If user has an entry, but hasn't sent a message in the last minute, give them karma
-                    await db.execute("UPDATE guild_{0} SET karma = karma + 1, timestamplastmessage = ? WHERE user_id = ?".format(guild_id), (message.created_at.timestamp(), message.author.id))
-                    await db.commit()
-                    await manage_karma_rewards(self, guild_id, message.author.id)
-#            async with db.execute("SELECT * FROM guild_{0}".format(guild_id)) as cursor: # Print all entries
-#                async for row in cursor:
-#                    print(row)
-                
+        user_id = message.author.id
+        async with self.db.get_session() as session:
+            result = await session.execute(
+                select(KarmaTable).filter_by(user_id=user_id, guild_id=guild_id)
+            )
+            karma_entry = result.scalars().first()
+            current_time = message.created_at.timestamp()
+            if not karma_entry:
+                session.add(
+                    KarmaTable(user_id=user_id, guild_id=guild_id, karma=1, timestamp_last_message=current_time))
+            elif karma_entry.timestamp_last_message < current_time - 60:
+                stmt = (
+                    update(KarmaTable)
+                    .where(KarmaTable.user_id == user_id, KarmaTable.guild_id == guild_id)
+                    .values(karma=KarmaTable.karma + 1, timestamp_last_message=current_time)
+                )
+                await session.execute(stmt)
+            await session.commit()
+
+    @tasks.loop(minutes=1)
+    async def give_voice_karma(self):
+        async with self.db.get_session() as session:
+            for guild in self.bot.guilds:
+                for channel in guild.voice_channels:
+                    active_users = [
+                        member
+                        for member in channel.members
+                        if not member.bot and not member.voice.self_mute and not member.voice.self_deaf
+                    ]
+                    if len(active_users) >= 2:
+                        for user in active_users:
+                            result = await session.execute(
+                                select(KarmaTable).filter_by(user_id=user.id, guild_id=guild.id)
+                            )
+                            karma_entry = result.scalars().first()
+                            if not karma_entry:
+                                session.add(KarmaTable(user_id=user.id, guild_id=guild.id, karma=1))
+                            else:
+                                stmt = (
+                                    update(KarmaTable)
+                                    .where(KarmaTable.user_id == user.id, KarmaTable.guild_id == guild.id)
+                                    .values(karma=KarmaTable.karma + 1)
+                                )
+                                await session.execute(stmt)
+            await session.commit()
+
+    async def manage_karma_rewards(self, guild_id, user_id):
+        async with self.db.get_session() as session:
+            rewards = await session.execute(select(RewardsTable).filter_by(guild_id=guild_id))
+            rewards = rewards.scalars().all()
+            user_karma = await session.execute(
+                select(KarmaTable.karma).filter_by(user_id=user_id, guild_id=guild_id)
+            )
+            user_karma = user_karma.scalar_one_or_none()
+
+            guild = self.bot.get_guild(guild_id)
+            member = guild.get_member(user_id)
+            if not member:
+                return
+
+            for reward in rewards:
+                role = guild.get_role(reward.role_id)
+                if not role:
+                    continue
+                if user_karma >= reward.karma_needed and role not in member.roles:
+                    await member.add_roles(role)
+                elif user_karma < reward.karma_needed and role in member.roles:
+                    await member.remove_roles(role)
+
     @discord.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         guild = self.bot.get_guild(payload.guild_id)
         channel = guild.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         message_author = message.author
-        #user = await self.bot.fetch_user(payload.member.id)
-        print("Recieved from {0}".format(message_author))
         emoji_id = payload.emoji.id
-        if message_author.bot: # Ignore bots
+
+        if message_author.bot:  # Ignore bots
             return
-        if emoji_id != 1199472652721586298 and emoji_id != 1199472654185418752: # Ignore reactions that aren't the ones we're looking for
-            #print("Ignoring")
+
+        upvote_emoji = 1199472652721586298
+        downvote_emoji = 1199472654185418752
+        if emoji_id not in {upvote_emoji, downvote_emoji}:
+            print("Ignoring")
             return
+
         guild_id = payload.guild_id
-        async with aiosqlite.connect(self.db_path) as db:
-            async with db.execute("SELECT * FROM guild_{0} WHERE user_id = ?".format(guild_id), (message_author.id,)) as cursor:
-                row = await cursor.fetchone()
-                if emoji_id == 1199472652721586298: # When the user reacts with the upvote emoji
-                    await db.execute("UPDATE guild_{0} SET karma = karma + 10 WHERE user_id = ?".format(guild_id), (message_author.id,))
-                    await db.commit()
-                    await manage_karma_rewards(self, guild_id, message_author.id)
-                elif emoji_id == 1199472654185418752: # When the user reacts with the downvote emoji
-                    if row[1] == 0:
-                        return print("Downvoted but no karma to remove")
-                    await db.execute("UPDATE guild_{0} SET karma = karma - 10 WHERE user_id = ?".format(guild_id), (message_author.id,))
-                    await db.commit()
-                    await manage_karma_rewards(self, guild_id, message_author.id)
+        async with self.db.get_session() as session:
+            user_karma = await session.scalar(
+                select(KarmaTable).where(
+                    KarmaTable.user_id == message_author.id,
+                    KarmaTable.guild_id == guild_id,
+                )
+            )
+
+            if emoji_id == upvote_emoji:
+                if user_karma:
+                    user_karma.karma += 1
+                else:
+                    session.add(
+                        KarmaTable(
+                            user_id=message_author.id,
+                            guild_id=guild_id,
+                            karma=1,
+                        )
+                    )
+                print("Upvoted")
+            elif emoji_id == downvote_emoji:
+                if user_karma and user_karma.karma > 0:
+                    user_karma.karma -= 1
+                    print("Downvoted")
+                else:
+                    print("Downvoted but no karma to remove")
+
+            await session.commit()
 
     @discord.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
@@ -72,267 +153,150 @@ class Karma(commands.Cog):
         channel = guild.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         message_author = message.author
-        #print("Recieved from {0}".format(message_author))
         emoji_id = payload.emoji.id
-        if message_author.bot: # Ignore bots
+
+        if message_author.bot:
             return
-        if emoji_id != 1199472652721586298 and emoji_id != 1199472654185418752: # Ignore reactions that aren't the ones we're looking for
-            #print("Ignoring")
+
+        upvote_emoji = 1199472652721586298
+        downvote_emoji = 1199472654185418752
+        if emoji_id not in {upvote_emoji, downvote_emoji}:
+            print("Ignoring")
             return
+
         guild_id = payload.guild_id
-        async with aiosqlite.connect(self.db_path) as db:
-            async with db.execute("SELECT * FROM guild_{0} WHERE user_id = ?".format(guild_id), (message_author.id,)) as cursor:
-                row = await cursor.fetchone()
-                if emoji_id == 1199472652721586298: # When the user removes the upvote emoji
-                    if row[1] == 0:
-                        return
-                    await db.execute("UPDATE guild_{0} SET karma = karma - 10 WHERE user_id = ?".format(guild_id), (message_author.id,))
-                    await db.commit()
-                    await manage_karma_rewards(self, guild_id, message_author.id)
-                elif emoji_id == 1199472654185418752: # When the user removes the downvote emoji
-                    await db.execute("UPDATE guild_{0} SET karma = karma + 10 WHERE user_id = ?".format(guild_id), (message_author.id,))
-                    await db.commit()
-                    await manage_karma_rewards(self, guild_id, message_author.id)
-    
-    @tasks.loop(minutes=1)
-    async def give_voice_karma(self):
-        for guild in self.bot.guilds:
-            for channel in guild.voice_channels:
-                real_users = [member for member in channel.members if not member.bot]
-                if len(real_users) >= 2:
-                    active_users = [member for member in real_users if member.voice.self_mute == False and member.voice.self_deaf == False]
-                    if len(active_users) >= 2:
-                        for user in active_users:
-                            #print("User: {0}".format(user))
-                            async with aiosqlite.connect(self.db_path) as db:
-                                async with db.execute("SELECT * FROM guild_{0} WHERE user_id = ?".format(guild.id), (user.id,)) as cursor:
-                                    row = await cursor.fetchone()
-                                    if row is None:
-                                        await db.execute("INSERT INTO guild_{0} (user_id, karma, timestamplastmessage) VALUES (?, 1, ?)".format(guild.id), (user.id, discord.utils.utcnow().timestamp()))
-                                        await db.commit()
-                                    elif row[2] < discord.utils.utcnow().timestamp() - 60:
-                                        await db.execute("UPDATE guild_{0} SET karma = karma + 1 WHERE user_id = ?".format(guild.id), (user.id))
-                                        await db.commit()
-                                        await manage_karma_rewards(self, guild.id, user.id)
+        async with self.db.get_session() as session:
+            user_karma = await session.scalar(
+                select(KarmaTable).where(
+                    KarmaTable.user_id == message_author.id,
+                    KarmaTable.guild_id == guild_id,
+                )
+            )
 
-    @discord.Cog.listener()
-    async def on_ready(self):
-        await setup_db(self, self.db_path, self.rewards_db_path) # Setup the database
+            if not user_karma:
+                return
 
-    @discord.slash_command(name="clear-leaderboard", description="Clear the karma leaderboard!")
-    async def clear_leaderboard(self, ctx):
-        if not ctx.author.guild_permissions.administrator: return await ctx.respond("You must be an administrator to clear the leaderboard!", ephemeral=True)
-        await ctx.defer()
-        guild_id = ctx.guild.id
-        guild_members = ctx.guild.members
-        async with aiosqlite.connect(self.db_path) as db:
-            async with db.execute("SELECT user_id FROM guild_{0}".format(guild_id)) as cursor:
-                rows = await cursor.fetchall()
-                for row in rows:
-                    user_id = row[0]
-                    member = ctx.guild.get_member(user_id)
-                    if member not in guild_members:
-                        print("Deleting {0}".format(member))
-                        await db.execute("DELETE FROM guild_{0} WHERE user_id = ?".format(guild_id), (user_id,))
-                await db.commit()
-        await ctx.respond("Leaderboard cleared!")
+            if emoji_id == upvote_emoji:
+                if user_karma.karma > 0:
+                    user_karma.karma -= 1
+                    print("Upvote removed")
+                else:
+                    print("Upvote removed but no karma to remove")
+            elif emoji_id == downvote_emoji:  # Remove downvote logic
+                user_karma.karma += 1
+                print("Downvote removed")
 
-    @discord.slash_command(name="karma", description="Check your karma!")
-    async def getkarma(
-        self,
-        ctx,
-        user: discord.Option(discord.Member, description="The user to check the karma of!", required=False) # type: ignore
-    ):
-        await ctx.defer()
-        guild_id = ctx.guild.id
-        async with aiosqlite.connect(self.db_path) as db:
-            if user:
-                async with db.execute("SELECT karma FROM guild_{0} WHERE user_id = ?".format(guild_id), (user.id,)) as cursor:
-                    row = await cursor.fetchone()
-                    if row is None:
-                        karma = 0
-                    else:
-                        karma = row[0]
-                await db.commit()
-                await ctx.respond(f"{user.display_name}'s karma is {karma}!")
-            else:
-                async with db.execute("SELECT karma FROM guild_{0} WHERE user_id = ?".format(guild_id), (ctx.author.id,)) as cursor:
-                    row = await cursor.fetchone()
-                    if row is None:
-                        karma = 0
-                    else:
-                        karma = row[0]
-                await db.commit()
-                await ctx.respond(f"Your karma is {karma}!")
+            await session.commit()
 
-    @discord.slash_command(name="leaderboard", description="Check the karma leaderboard!")
+    @commands.command(name="givekarma")
+    @commands.has_permissions(administrator=True)
+    async def give_karma(self, ctx, member: discord.Member, amount: int):
+        """Gives karma to a specified user."""
+        if member.bot:
+            await ctx.send("Bots cannot receive karma!")
+            return
+        async with self.db.get_session() as session:
+            stmt = (
+                update(KarmaTable)
+                .where(KarmaTable.user_id == member.id, KarmaTable.guild_id == ctx.guild.id)
+                .values(karma=KarmaTable.karma + amount)
+            )
+            await session.execute(stmt)
+            await session.commit()
+        await ctx.send(f"Gave {amount} karma to {member.mention}!")
+
+    @commands.command(name="removekarma")
+    @commands.has_permissions(administrator=True)
+    async def remove_karma(self, ctx, member: discord.Member, amount: int):
+        """Removes karma from a specified user."""
+        if member.bot:
+            await ctx.send("Bots cannot lose karma!")
+            return
+        async with self.db.get_session() as session:
+            stmt = (
+                update(KarmaTable)
+                .where(KarmaTable.user_id == member.id, KarmaTable.guild_id == ctx.guild.id)
+                .values(karma=KarmaTable.karma - amount)
+            )
+            await session.execute(stmt)
+            await session.commit()
+        await ctx.send(f"Removed {amount} karma from {member.mention}!")
+
+    @commands.command(name="leaderboard")
     async def leaderboard(self, ctx):
-        await ctx.defer()
-        embed = discord.Embed(title="Karma Leaderboard", color=discord.Color.blurple())
-        guild_id = ctx.guild.id
-        try:
-            async with aiosqlite.connect(self.db_path) as db:
-                async with db.execute("SELECT * FROM guild_{0} ORDER BY karma DESC LIMIT 10".format(guild_id),) as cursor:
-                    rows = await cursor.fetchall()
-                    for row in rows:
-                        user = ctx.guild.get_member(row[0])
-                        embed.add_field(name=user, value=row[1], inline=False)
-                await db.commit()
-            await ctx.respond(embed=embed)
-        except Exception as e:
-            await ctx.respond(f"An error occurred: {e}", ephemeral=True)
+        """Displays the leaderboard for the server."""
+        async with self.db.get_session() as session:
+            result = await session.execute(
+                select(KarmaTable)
+                .where(KarmaTable.guild_id == ctx.guild.id)
+                .order_by(KarmaTable.karma.desc())
+                .limit(10)
+            )
+            top_users = result.scalars().all()
+        if not top_users:
+            await ctx.send("No leaderboard data available.")
+            return
+        leaderboard = "\n".join(
+            [f"{i + 1}. <@{user.user_id}> - {user.karma} karma" for i, user in enumerate(top_users)]
+        )
+        await ctx.send(f"**Leaderboard:**\n{leaderboard}")
 
-    @discord.slash_command(name="givekarma", description="Give karma to a user!")
-    async def givekarma(
-        self, 
-        ctx, 
-        user: discord.Option(discord.Member, description="The user to give karma to!", required=True), # type: ignore
-        amount: int = 1
-    ):
-        if not ctx.author.guild_permissions.administrator:
-            await ctx.respond("You must be an administrator to give karma!", ephemeral=True)
-            return
-        if user.bot:
-            await ctx.respond("You can't give karma to bots!", ephemeral=True)
-            return
-        await ctx.defer()
-        guild_id = ctx.guild.id
-        if user == ctx.author:
-            await ctx.respond("You can't give karma to yourself!")
-            return
-        async with aiosqlite.connect(self.db_path) as db:
-            async with db.execute("SELECT * FROM guild_{0} WHERE user_id = ?".format(guild_id), (user.id,)) as cursor:
-                row = await cursor.fetchone()
-                if row is None:
-                    await db.execute("INSERT INTO guild_{0} (user_id, karma, timestamplastmessage) VALUES (?, ?, ?)".format(guild_id), (user.id, amount, discord.utils.utcnow().timestamp()))
-                    await db.commit()
-                else:
-                    await db.execute("UPDATE guild_{0} SET karma = karma + ?, timestamplastmessage = ? WHERE user_id = ?".format(guild_id), (amount, discord.utils.utcnow().timestamp(), user.id))
-                    await db.commit()
-        await manage_karma_rewards(self, guild_id, user.id)
-        await ctx.respond(f"Gave {amount} karma to {user.display_name}!")
+    @commands.command(name="clearleaderboard")
+    async def clear_leaderboard(self, ctx):
+        """Clears the leaderboard for the server."""
+        async with self.db.get_session() as session:
+            stmt = delete(KarmaTable).where(KarmaTable.guild_id == ctx.guild.id)
+            await session.execute(stmt)
+            await session.commit()
+        await ctx.send("Leaderboard has been cleared!")
 
-    @discord.slash_command(name="removekarma", description="Remove karma from a user!")
-    async def removekarma(
-        self, 
-        ctx, 
-        user: discord.Option(discord.Member, description="The user to remove karma from!", required=True), # type: ignore
-        amount: int = 1
-    ):
-        if not ctx.author.guild_permissions.administrator:
-            await ctx.respond("You must be an administrator to remove karma!", ephemeral=True)
-            return
-        if user.bot:
-            await ctx.respond("You can't remove karma from bots!", ephemeral=True)
-            return
-        await ctx.defer()
-        guild_id = ctx.guild.id
-        if user == ctx.author:
-            await ctx.respond("You can't remove karma from yourself!")
-            return
-        async with aiosqlite.connect(self.db_path) as db:
-            async with db.execute("SELECT * FROM guild_{0} WHERE user_id = ?".format(guild_id), (user.id,)) as cursor:
-                row = await cursor.fetchone()
-                if row is None:
-                    await db.execute("INSERT INTO guild_{0} (user_id, karma, timestamplastmessage) VALUES (?, 0, ?)".format(guild_id), (user.id, discord.utils.utcnow().timestamp()))
-                    await db.commit()
-                    await ctx.respond(f"{user.display_name} has no karma to remove!")
-                elif row[1] - amount < 0:
-                    await db.execute("UPDATE guild_{0} SET karma = 0, timestamplastmessage = ? WHERE user_id = ?".format(guild_id), (discord.utils.utcnow().timestamp(), user.id))
-                    await db.commit()
-                    await ctx.respond(f"Removed {row[1]} karma from {user.display_name}!")
-                else:
-                    await db.execute("UPDATE guild_{0} SET karma = karma - ?, timestamplastmessage = ? WHERE user_id = ?".format(guild_id), (amount, discord.utils.utcnow().timestamp(), user.id))
-                    await db.commit()
-                    await ctx.respond(f"Removed {amount} karma from {user.display_name}!")
-        await manage_karma_rewards(self, guild_id, user.id)
+    @commands.command(name="karma")
+    async def check_karma(self, ctx, member: discord.Member = None):
+        """Check karma for a user."""
+        member = member or ctx.author
+        async with self.db.get_session() as session:
+            result = await session.execute(
+                select(KarmaTable.karma).filter_by(user_id=member.id, guild_id=ctx.guild.id)
+            )
+            karma = result.scalar_one_or_none()
+        await ctx.send(f"{member.display_name} has {karma or 0} karma.")
 
-    @discord.slash_command(name="addreward", description="Add a role reward!")
-    async def addreward(
-        self,
-        ctx,
-        role: discord.Option(discord.Role, description="The role to add as a reward", required=True), # type: ignore
-        karma_needed: discord.Option(int, description="The amount of karma needed to get the role", required=True) # type: ignore
-    ):
-        if not ctx.author.guild_permissions.administrator:
-            await ctx.respond("You must be an administrator to add rewards!", ephemeral=True)
-            return
-        await ctx.defer()
-        guild_id = ctx.guild.id
-        async with aiosqlite.connect(self.rewards_db_path) as db:
-            async with db.execute("SELECT * FROM guild_{0} WHERE role_id = ?".format(guild_id), (role.id,)) as cursor:
-                row = await cursor.fetchone()
-                if row is not None:
-                    await ctx.respond("This role is already added as a reward!")
-                    return
-                await db.execute("INSERT INTO guild_{0} (role_id, karma_needed) VALUES (?, ?)".format(guild_id), (role.id, karma_needed))
-                await db.commit()
-        await ctx.respond(f"Added {role.name} as a reward for {karma_needed}!")
-        async with aiosqlite.connect(self.db_path) as db:
-            async with db.execute("SELECT user_id FROM guild_{0} WHERE karma >= ?".format(guild_id), (karma_needed,)) as cursor:
-                rows = await cursor.fetchall()
-                for row in rows:
-                    user_id = row[0]
-                    member = ctx.guild.get_member(user_id)
-                    if member:
-                        await member.add_roles(role)
+    @commands.command(name="add_reward")
+    @commands.has_permissions(manage_roles=True)
+    async def add_reward(self, ctx, role: discord.Role, karma_needed: int):
+        """Add a reward role for karma."""
+        async with self.db.get_session() as session:
+            session.add(RewardsTable(role_id=role.id, guild_id=ctx.guild.id, karma_needed=karma_needed))
+            await session.commit()
+        await ctx.send(f"Added {role.name} as a reward for {karma_needed} karma.")
 
-    @discord.slash_command(name="removereward", description="Remove a role reward!")
-    async def removereward(
-        self,
-        ctx,
-        role: discord.Option(discord.Role, description="The role to remove as a reward", required=True) # type: ignore
-    ):
-        if not ctx.author.guild_permissions.administrator:
-            await ctx.respond("You must be an administrator to remove rewards!", ephemeral=True)
-            return
-        await ctx.defer()
-        guild_id = ctx.guild.id
-        async with aiosqlite.connect(self.rewards_db_path) as db:
-            async with db.execute("SELECT * FROM guild_{0} WHERE role_id = ?".format(guild_id), (role.id,)) as cursor:
-                row = await cursor.fetchone()
-                if row is None:
-                    await ctx.respond("This role is not added as a reward!")
-                    return
-                await db.execute("DELETE FROM guild_{0} WHERE role_id = ?".format(guild_id), (role.id,))
-                await db.commit()
-        await ctx.respond(f"Removed {role.name} as a reward!")
-        for member in role.members:
-            await member.remove_roles(role)
+    @commands.command(name="remove_reward")
+    @commands.has_permissions(manage_roles=True)
+    async def remove_reward(self, ctx, role: discord.Role):
+        """Remove a reward role for karma."""
+        async with self.db.get_session() as session:
+            await session.execute(
+                delete(RewardsTable).where(RewardsTable.role_id == role.id, RewardsTable.guild_id == ctx.guild.id)
+            )
+            await session.commit()
+        await ctx.send(f"Removed {role.name} from the reward roles.")
 
-async def setup_db(self, db_path, rewards_db_path):
-    async with aiosqlite.connect(db_path) as db:
-        for guild in self.bot.guilds:
-            await db.execute("CREATE TABLE IF NOT EXISTS guild_{0} (user_id INTEGER PRIMARY KEY, karma INTEGER DEFAULT 0, timestamplastmessage INTEGER)".format(guild.id))
-            for member in guild.members:
-                if not member.bot:
-                    async with db.execute("SELECT * FROM guild_{0} WHERE user_id = ?".format(guild.id), (member.id,)) as cursor:
-                        row = await cursor.fetchone()
-                        if row is None:
-                            await db.execute("INSERT INTO guild_{0} (user_id, karma, timestamplastmessage) VALUES (?, 0, 0)".format(guild.id), (member.id,))
-            await db.commit()
-    async with aiosqlite.connect(rewards_db_path) as db:
-        for guild in self.bot.guilds:
-            await db.execute("CREATE TABLE IF NOT EXISTS guild_{0} (role_id INTEGER PRIMARY KEY, karma_needed INTEGER)".format(guild.id))
+    @commands.command(name="rewards")
+    async def list_rewards(self, ctx):
+        """List all reward roles for karma."""
+        async with self.db.get_session() as session:
+            results = await session.execute(
+                select(RewardsTable).filter_by(guild_id=ctx.guild.id)
+            )
+            rewards = results.scalars().all()
+        if not rewards:
+            await ctx.send("No rewards have been set.")
+        else:
+            rewards_list = "\n".join(
+                [f"{ctx.guild.get_role(reward.role_id).name}: {reward.karma_needed} karma" for reward in rewards]
+            )
+            await ctx.send(f"Reward roles:\n{rewards_list}")
 
-async def manage_karma_rewards(self, guild_id, user_id):
-    async with aiosqlite.connect(self.rewards_db_path) as db:
-        async with db.execute("SELECT * FROM guild_{0}".format(guild_id)) as cursor:
-            async for row in cursor:
-                role = self.bot.get_guild(guild_id).get_role(row[0])
-                if role:
-                    async with aiosqlite.connect(self.db_path) as db:
-                        async with db.execute("SELECT karma FROM guild_{0} WHERE user_id = ?".format(guild_id), (user_id,)) as cursor:
-                            karma = await cursor.fetchone()
-                            if karma[0] >= row[1]:
-                                member = self.bot.get_guild(guild_id).get_member(user_id)
-                                if role not in member.roles:
-                                    await member.add_roles(role)
-                                print("Role given")
-                            else:
-                                member = self.bot.get_guild(guild_id).get_member(user_id)
-                                if role in member.roles:
-                                    await member.remove_roles(role)
-                                print("Role removed")
+
 def setup(bot):
     bot.add_cog(Karma(bot))
