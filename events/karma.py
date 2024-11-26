@@ -39,7 +39,8 @@ class Karma(commands.Cog):
             karma_entry = result.scalars().first()
             current_time = message.created_at.timestamp()
             if not karma_entry:
-                session.add(KarmaTable(user_id=user_id, guild_id=guild_id, karma=1, timestamp_last_message=current_time))
+                session.add(
+                    KarmaTable(user_id=user_id, guild_id=guild_id, karma=1, timestamp_last_message=current_time))
             elif karma_entry.timestamp_last_message < current_time - 60:
                 stmt = (
                     update(KarmaTable)
@@ -187,7 +188,6 @@ class Karma(commands.Cog):
 
             await session.commit()
 
-
     @commands.command(name="givekarma")
     @commands.has_permissions(administrator=True)
     async def give_karma(self, ctx, member: discord.Member, amount: int):
@@ -250,9 +250,6 @@ class Karma(commands.Cog):
             await session.commit()
         await ctx.send("Leaderboard has been cleared!")
 
-
-
-
     @commands.command(name="karma")
     async def check_karma(self, ctx, member: discord.Member = None):
         """Check karma for a user."""
@@ -299,7 +296,6 @@ class Karma(commands.Cog):
                 [f"{ctx.guild.get_role(reward.role_id).name}: {reward.karma_needed} karma" for reward in rewards]
             )
             await ctx.send(f"Reward roles:\n{rewards_list}")
-
 
 
 def setup(bot):
