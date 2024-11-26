@@ -11,6 +11,9 @@ class Karma(commands.Cog):
         self.bot.loop.create_task(self.db.init_db())
         self.give_voice_karma.start()
 
+    def cog_unload(self):
+        self.give_voice_karma.cancel()
+
     @discord.Cog.listener()
     async def on_guild_join(self, guild):
         async with self.db.get_session() as session:
@@ -96,6 +99,81 @@ class Karma(commands.Cog):
                 elif user_karma < reward.karma_needed and role in member.roles:
                     await member.remove_roles(role)
 
+
+
+    @discord.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        pass
+
+
+    @discord.Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        pass
+
+
+    @commands.command(name="givekarma")
+    async def give_karma(self, ctx, member: discord.Member, amount: int):
+        """Gives karma to a specified user."""
+        if member.bot:
+            await ctx.send("Bots cannot receive karma!")
+            return
+        async with self.db.get_session() as session:
+            stmt = (
+                update(KarmaTable)
+                .where(KarmaTable.user_id == member.id, KarmaTable.guild_id == ctx.guild.id)
+                .values(karma=KarmaTable.karma + amount)
+            )
+            await session.execute(stmt)
+            await session.commit()
+        await ctx.send(f"Gave {amount} karma to {member.mention}!")
+
+    @commands.command(name="removekarma")
+    async def remove_karma(self, ctx, member: discord.Member, amount: int):
+        """Removes karma from a specified user."""
+        if member.bot:
+            await ctx.send("Bots cannot lose karma!")
+            return
+        async with self.db.get_session() as session:
+            stmt = (
+                update(KarmaTable)
+                .where(KarmaTable.user_id == member.id, KarmaTable.guild_id == ctx.guild.id)
+                .values(karma=KarmaTable.karma - amount)
+            )
+            await session.execute(stmt)
+            await session.commit()
+        await ctx.send(f"Removed {amount} karma from {member.mention}!")
+
+    @commands.command(name="leaderboard")
+    async def leaderboard(self, ctx):
+        """Displays the leaderboard for the server."""
+        async with self.db.get_session() as session:
+            result = await session.execute(
+                select(KarmaTable)
+                .where(KarmaTable.guild_id == ctx.guild.id)
+                .order_by(KarmaTable.karma.desc())
+                .limit(10)
+            )
+            top_users = result.scalars().all()
+        if not top_users:
+            await ctx.send("No leaderboard data available.")
+            return
+        leaderboard = "\n".join(
+            [f"{i + 1}. <@{user.user_id}> - {user.karma} karma" for i, user in enumerate(top_users)]
+        )
+        await ctx.send(f"**Leaderboard:**\n{leaderboard}")
+
+    @commands.command(name="clearleaderboard")
+    async def clear_leaderboard(self, ctx):
+        """Clears the leaderboard for the server."""
+        async with self.db.get_session() as session:
+            stmt = delete(KarmaTable).where(KarmaTable.guild_id == ctx.guild.id)
+            await session.execute(stmt)
+            await session.commit()
+        await ctx.send("Leaderboard has been cleared!")
+
+
+
+
     @commands.command(name="karma")
     async def check_karma(self, ctx, member: discord.Member = None):
         """Check karma for a user."""
@@ -142,6 +220,7 @@ class Karma(commands.Cog):
                 [f"{ctx.guild.get_role(reward.role_id).name}: {reward.karma_needed} karma" for reward in rewards]
             )
             await ctx.send(f"Reward roles:\n{rewards_list}")
+
 
 
 def setup(bot):
