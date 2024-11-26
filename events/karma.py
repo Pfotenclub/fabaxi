@@ -99,19 +99,97 @@ class Karma(commands.Cog):
                 elif user_karma < reward.karma_needed and role in member.roles:
                     await member.remove_roles(role)
 
-
-
     @discord.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        pass
+        guild = self.bot.get_guild(payload.guild_id)
+        channel = guild.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        message_author = message.author
+        emoji_id = payload.emoji.id
 
+        if message_author.bot:  # Ignore bots
+            return
+
+        upvote_emoji = 1199472652721586298
+        downvote_emoji = 1199472654185418752
+        if emoji_id not in {upvote_emoji, downvote_emoji}:
+            print("Ignoring")
+            return
+
+        guild_id = payload.guild_id
+        async with self.db.get_session() as session:
+            user_karma = await session.scalar(
+                select(KarmaTable).where(
+                    KarmaTable.user_id == message_author.id,
+                    KarmaTable.guild_id == guild_id,
+                )
+            )
+
+            if emoji_id == upvote_emoji:
+                if user_karma:
+                    user_karma.karma += 1
+                else:
+                    session.add(
+                        KarmaTable(
+                            user_id=message_author.id,
+                            guild_id=guild_id,
+                            karma=1,
+                        )
+                    )
+                print("Upvoted")
+            elif emoji_id == downvote_emoji:
+                if user_karma and user_karma.karma > 0:
+                    user_karma.karma -= 1
+                    print("Downvoted")
+                else:
+                    print("Downvoted but no karma to remove")
+
+            await session.commit()
 
     @discord.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
-        pass
+        guild = self.bot.get_guild(payload.guild_id)
+        channel = guild.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        message_author = message.author
+        emoji_id = payload.emoji.id
+
+        if message_author.bot:
+            return
+
+        upvote_emoji = 1199472652721586298
+        downvote_emoji = 1199472654185418752
+        if emoji_id not in {upvote_emoji, downvote_emoji}:
+            print("Ignoring")
+            return
+
+        guild_id = payload.guild_id
+        async with self.db.get_session() as session:
+            user_karma = await session.scalar(
+                select(KarmaTable).where(
+                    KarmaTable.user_id == message_author.id,
+                    KarmaTable.guild_id == guild_id,
+                )
+            )
+
+            if not user_karma:
+                return
+
+            if emoji_id == upvote_emoji:
+                if user_karma.karma > 0:
+                    user_karma.karma -= 1
+                    print("Upvote removed")
+                else:
+                    print("Upvote removed but no karma to remove")
+            elif emoji_id == downvote_emoji:  # Remove downvote logic
+                user_karma.karma += 1
+                print("Downvote removed")
+
+            await session.commit()
 
 
     @commands.command(name="givekarma")
+    @commands.has_permissions(administrator=True)
     async def give_karma(self, ctx, member: discord.Member, amount: int):
         """Gives karma to a specified user."""
         if member.bot:
@@ -128,6 +206,7 @@ class Karma(commands.Cog):
         await ctx.send(f"Gave {amount} karma to {member.mention}!")
 
     @commands.command(name="removekarma")
+    @commands.has_permissions(administrator=True)
     async def remove_karma(self, ctx, member: discord.Member, amount: int):
         """Removes karma from a specified user."""
         if member.bot:
