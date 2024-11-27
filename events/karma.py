@@ -198,6 +198,8 @@ class Karma(commands.Cog):
     @commands.has_guild_permissions(administrator=True)
     async def give_karma(self, ctx, member: discord.Member, amount: int):
         """Adjusts karma of a specified user by provided amount."""
+        if member.id == ctx.author.id:
+            return await ctx.respond("You cannot adjust your own karma!")
         if member.bot:
             return await ctx.respond("Bots cannot receive karma!")
 
@@ -207,14 +209,19 @@ class Karma(commands.Cog):
     @commands.slash_command(name="leaderboard")
     async def leaderboard(self, ctx):
         """Displays the leaderboard for the server."""
+        await ctx.defer()
+        embed = discord.Embed(title="Karma Leaderboard", color=discord.Color.blurple())
         top_users = await self.db.get_karma_leaderboard(ctx.guild.id, 10)
+
         if not top_users:
             await ctx.respond("No leaderboard data available.")
             return
-        leaderboard = "\n".join(
-            [f"{i + 1}. <@{user.user_id}> - {user.karma} karma" for i, user in enumerate(top_users)]
-        )
-        await ctx.respond(f"**Leaderboard:**\n{leaderboard}")
+
+        for row in top_users:
+            user = ctx.guild.get_member(row.user_id)
+            embed.add_field(name=user, value=row.karma, inline=False)
+
+        await ctx.respond(embed=embed)
 
     @commands.slash_command(name="clearleaderboard")
     @commands.has_permissions(administrator=True)
