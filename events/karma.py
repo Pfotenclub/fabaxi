@@ -2,9 +2,14 @@ from discord.ext import commands, tasks
 import discord
 from sqlalchemy import select, update, delete
 from database.karma_db import Database, KarmaTable, RewardsTable
-
+import logging
 
 class Karma(commands.Cog):
+    logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(message)s',
+                    handlers=[logging.StreamHandler()])
+
+
     def __init__(self, bot):
         self.bot = bot
         self.db = Database()
@@ -114,7 +119,7 @@ class Karma(commands.Cog):
         upvote_emoji = 1199472652721586298
         downvote_emoji = 1199472654185418752
         if emoji_id not in {upvote_emoji, downvote_emoji}:
-            print("Ignoring")
+            logging.info("Ignoring")
             return
 
         guild_id = payload.guild_id
@@ -137,13 +142,13 @@ class Karma(commands.Cog):
                             karma=1,
                         )
                     )
-                print("Upvoted")
+                logging.info("Upvoted")
             elif emoji_id == downvote_emoji:
                 if user_karma and user_karma.karma > 0:
                     user_karma.karma -= 1
-                    print("Downvoted")
+                    logging.info("Downvoted")
                 else:
-                    print("Downvoted but no karma to remove")
+                    logging.info("Downvoted but no karma to remove")
 
             await session.commit()
 
@@ -161,7 +166,7 @@ class Karma(commands.Cog):
         upvote_emoji = 1199472652721586298
         downvote_emoji = 1199472654185418752
         if emoji_id not in {upvote_emoji, downvote_emoji}:
-            print("Ignoring")
+            logging.info("Ignoring")
             return
 
         guild_id = payload.guild_id
@@ -179,109 +184,61 @@ class Karma(commands.Cog):
             if emoji_id == upvote_emoji:
                 if user_karma.karma > 0:
                     user_karma.karma -= 1
-                    print("Upvote removed")
+                    logging.info("Upvote removed")
                 else:
-                    print("Upvote removed but no karma to remove")
+                    logging.info("Upvote removed but no karma to remove")
             elif emoji_id == downvote_emoji:  # Remove downvote logic
                 user_karma.karma += 1
-                print("Downvote removed")
+                logging.info("Downvote removed")
 
             await session.commit()
 
-    @commands.command(name="givekarma")
+    @commands.slash_command(name="adjustkarma")
     @commands.has_permissions(administrator=True)
     async def give_karma(self, ctx, member: discord.Member, amount: int):
-        """Gives karma to a specified user."""
+        """Adjusts karma of a specified user by provided amount."""
         if member.bot:
-            await ctx.send("Bots cannot receive karma!")
-            return
-        async with self.db.get_session() as session:
-            stmt = (
-                update(KarmaTable)
-                .where(KarmaTable.user_id == member.id, KarmaTable.guild_id == ctx.guild.id)
-                .values(karma=KarmaTable.karma + amount)
-            )
-            await session.execute(stmt)
-            await session.commit()
-        await ctx.send(f"Gave {amount} karma to {member.mention}!")
+            return await ctx.respond("Bots cannot receive karma!")
 
-    @commands.command(name="removekarma")
-    @commands.has_permissions(administrator=True)
-    async def remove_karma(self, ctx, member: discord.Member, amount: int):
-        """Removes karma from a specified user."""
-        if member.bot:
-            await ctx.send("Bots cannot lose karma!")
-            return
-        async with self.db.get_session() as session:
-            stmt = (
-                update(KarmaTable)
-                .where(KarmaTable.user_id == member.id, KarmaTable.guild_id == ctx.guild.id)
-                .values(karma=KarmaTable.karma - amount)
-            )
-            await session.execute(stmt)
-            await session.commit()
-        await ctx.send(f"Removed {amount} karma from {member.mention}!")
+        await self.db.adjust_karma_for_user(member.id, ctx.guild.id, amount)
+        await ctx.respond(f"Gave {amount} karma to {member.mention}!")
 
-    @commands.command(name="leaderboard")
+    @commands.slash_command(name="leaderboard")
     async def leaderboard(self, ctx):
         """Displays the leaderboard for the server."""
-        async with self.db.get_session() as session:
-            result = await session.execute(
-                select(KarmaTable)
-                .where(KarmaTable.guild_id == ctx.guild.id)
-                .order_by(KarmaTable.karma.desc())
-                .limit(10)
-            )
-            top_users = result.scalars().all()
-        if not top_users:
-            await ctx.send("No leaderboard data available.")
-            return
-        leaderboard = "\n".join(
-            [f"{i + 1}. <@{user.user_id}> - {user.karma} karma" for i, user in enumerate(top_users)]
-        )
-        await ctx.send(f"**Leaderboard:**\n{leaderboard}")
+        leaderboard = self.db.get_karma_leaderboard(ctx.guild.id, 10)
+        await ctx.respond(f"**Leaderboard:**\n{leaderboard}")
 
-    @commands.command(name="clearleaderboard")
+    @commands.slash_command(name="clearleaderboard")
     async def clear_leaderboard(self, ctx):
         """Clears the leaderboard for the server."""
-        async with self.db.get_session() as session:
-            stmt = delete(KarmaTable).where(KarmaTable.guild_id == ctx.guild.id)
-            await session.execute(stmt)
-            await session.commit()
-        await ctx.send("Leaderboard has been cleared!")
+        await self.db.clear_karma_leaderboard(ctx.guild.id)
+        await ctx.respond("Leaderboard has been cleared!")
 
-    @commands.command(name="karma")
+    @commands.slash_command(name="karma")
     async def check_karma(self, ctx, member: discord.Member = None):
         """Check karma for a user."""
         member = member or ctx.author
-        async with self.db.get_session() as session:
-            result = await session.execute(
-                select(KarmaTable.karma).filter_by(user_id=member.id, guild_id=ctx.guild.id)
-            )
-            karma = result.scalar_one_or_none()
-        await ctx.send(f"{member.display_name} has {karma or 0} karma.")
+        karma = self.db.get_user_karma(member.id, ctx.guild.id)
+        await ctx.respond(f"{member.display_name} has {karma or 0} karma.")
 
-    @commands.command(name="add_reward")
+    @commands.slash_command(name="add_reward")
     @commands.has_permissions(manage_roles=True)
     async def add_reward(self, ctx, role: discord.Role, karma_needed: int):
         """Add a reward role for karma."""
         async with self.db.get_session() as session:
             session.add(RewardsTable(role_id=role.id, guild_id=ctx.guild.id, karma_needed=karma_needed))
             await session.commit()
-        await ctx.send(f"Added {role.name} as a reward for {karma_needed} karma.")
+        await ctx.respond(f"Added {role.name} as a reward for {karma_needed} karma.")
 
-    @commands.command(name="remove_reward")
+    @commands.slash_command(name="remove_reward")
     @commands.has_permissions(manage_roles=True)
     async def remove_reward(self, ctx, role: discord.Role):
         """Remove a reward role for karma."""
-        async with self.db.get_session() as session:
-            await session.execute(
-                delete(RewardsTable).where(RewardsTable.role_id == role.id, RewardsTable.guild_id == ctx.guild.id)
-            )
-            await session.commit()
-        await ctx.send(f"Removed {role.name} from the reward roles.")
+        await self.db.remove_reward(role.id, ctx.guild.id)
+        await ctx.respond(f"Removed {role.name} from the reward roles.")
 
-    @commands.command(name="rewards")
+    @commands.slash_command(name="rewards")
     async def list_rewards(self, ctx):
         """List all reward roles for karma."""
         async with self.db.get_session() as session:
@@ -290,12 +247,12 @@ class Karma(commands.Cog):
             )
             rewards = results.scalars().all()
         if not rewards:
-            await ctx.send("No rewards have been set.")
+            await ctx.respond("No rewards have been set.")
         else:
             rewards_list = "\n".join(
                 [f"{ctx.guild.get_role(reward.role_id).name}: {reward.karma_needed} karma" for reward in rewards]
             )
-            await ctx.send(f"Reward roles:\n{rewards_list}")
+            await ctx.respond(f"Reward roles:\n{rewards_list}")
 
 
 def setup(bot):

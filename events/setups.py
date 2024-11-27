@@ -23,7 +23,7 @@ def health_check():
 def run():
     print("Starting FastAPI server")
     uvicorn.run(
-        "setups:app",
+        "events.setups:app",
         host="0.0.0.0",
         port=int(os.getenv("STATUS_UPDATE_PORT", 8000)),
         log_level="info",
