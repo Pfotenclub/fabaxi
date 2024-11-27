@@ -5,7 +5,7 @@ from database.karma_db import Database, KarmaTable, RewardsTable
 import logging
 
 class Karma(commands.Cog):
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=logging.WARN,
                     format='%(asctime)s %(message)s',
                     handlers=[logging.StreamHandler()])
 
@@ -119,7 +119,7 @@ class Karma(commands.Cog):
         upvote_emoji = 1199472652721586298
         downvote_emoji = 1199472654185418752
         if emoji_id not in {upvote_emoji, downvote_emoji}:
-            logging.info("Ignoring")
+            logging.debug("Ignoring")
             return
 
         guild_id = payload.guild_id
@@ -142,13 +142,13 @@ class Karma(commands.Cog):
                             karma=1,
                         )
                     )
-                logging.info("Upvoted")
+                logging.debug("Upvoted")
             elif emoji_id == downvote_emoji:
                 if user_karma and user_karma.karma > 0:
                     user_karma.karma -= 1
-                    logging.info("Downvoted")
+                    logging.debug("Downvoted")
                 else:
-                    logging.info("Downvoted but no karma to remove")
+                    logging.debug("Downvoted but no karma to remove")
 
             await session.commit()
 
@@ -166,7 +166,7 @@ class Karma(commands.Cog):
         upvote_emoji = 1199472652721586298
         downvote_emoji = 1199472654185418752
         if emoji_id not in {upvote_emoji, downvote_emoji}:
-            logging.info("Ignoring")
+            logging.debug("Ignoring")
             return
 
         guild_id = payload.guild_id
@@ -184,9 +184,9 @@ class Karma(commands.Cog):
             if emoji_id == upvote_emoji:
                 if user_karma.karma > 0:
                     user_karma.karma -= 1
-                    logging.info("Upvote removed")
+                    logging.debug("Upvote removed")
                 else:
-                    logging.info("Upvote removed but no karma to remove")
+                    logging.debug("Upvote removed but no karma to remove")
             elif emoji_id == downvote_emoji:  # Remove downvote logic
                 user_karma.karma += 1
                 logging.info("Downvote removed")
@@ -195,6 +195,7 @@ class Karma(commands.Cog):
 
     @commands.slash_command(name="adjustkarma")
     @commands.has_permissions(administrator=True)
+    @commands.has_guild_permissions(administrator=True)
     async def give_karma(self, ctx, member: discord.Member, amount: int):
         """Adjusts karma of a specified user by provided amount."""
         if member.bot:
@@ -206,10 +207,18 @@ class Karma(commands.Cog):
     @commands.slash_command(name="leaderboard")
     async def leaderboard(self, ctx):
         """Displays the leaderboard for the server."""
-        leaderboard = self.db.get_karma_leaderboard(ctx.guild.id, 10)
+        top_users = await self.db.get_karma_leaderboard(ctx.guild.id, 10)
+        if not top_users:
+            await ctx.respond("No leaderboard data available.")
+            return
+        leaderboard = "\n".join(
+            [f"{i + 1}. <@{user.user_id}> - {user.karma} karma" for i, user in enumerate(top_users)]
+        )
         await ctx.respond(f"**Leaderboard:**\n{leaderboard}")
 
     @commands.slash_command(name="clearleaderboard")
+    @commands.has_permissions(administrator=True)
+    @commands.has_guild_permissions(administrator=True)
     async def clear_leaderboard(self, ctx):
         """Clears the leaderboard for the server."""
         await self.db.clear_karma_leaderboard(ctx.guild.id)
@@ -224,6 +233,7 @@ class Karma(commands.Cog):
 
     @commands.slash_command(name="add_reward")
     @commands.has_permissions(manage_roles=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def add_reward(self, ctx, role: discord.Role, karma_needed: int):
         """Add a reward role for karma."""
         async with self.db.get_session() as session:
@@ -233,6 +243,7 @@ class Karma(commands.Cog):
 
     @commands.slash_command(name="remove_reward")
     @commands.has_permissions(manage_roles=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def remove_reward(self, ctx, role: discord.Role):
         """Remove a reward role for karma."""
         await self.db.remove_reward(role.id, ctx.guild.id)
