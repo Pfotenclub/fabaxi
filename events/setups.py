@@ -1,6 +1,5 @@
 import time
-
-import FastAPI
+from fastapi import FastAPI
 import discord
 import uvicorn
 from discord.ext import commands, tasks
