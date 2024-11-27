@@ -1,6 +1,6 @@
 import time
 
-import FastAPI
+import fastapi
 import discord
 import uvicorn
 from discord.ext import commands, tasks
@@ -11,7 +11,7 @@ import os
 
 load_dotenv()
 
-app = FastAPI()
+app = fastapi()
 
 @app.post('/chatgpaint-ping')
 def ping():
