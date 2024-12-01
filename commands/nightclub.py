@@ -50,8 +50,6 @@ class NightclubAgeVerification(discord.ui.Modal):
             **kwargs
         )
     async def callback(self, interaction: discord.Interaction):
-        if interaction.user.id != 327880195476422656:
-            return await interaction.respond("You are not the owner of the bot!", ephemeral=True)
         if interaction.user.get_role(1229064333993050123) is not None:
             await interaction.guild.get_channel(1283842433284837396).send(f"<@&1311047394074300498>\r\n{interaction.user.mention} has requested to join the Nightclub with the <18 Role...")
             return await interaction.respond("You have the <18 Role...", ephemeral=True)
