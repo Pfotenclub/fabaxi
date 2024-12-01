@@ -11,8 +11,6 @@ class NightclubInterface(discord.ui.Button):
             )
 
     async def callback(self, interaction: discord.Interaction):
-        if interaction.user.id != 327880195476422656:
-            return await interaction.response.send_message("You are not the owner of the bot!", ephemeral=True)
         
         await interaction.response.send_modal(NightclubAgeVerification(title="Age Verification"))
         
