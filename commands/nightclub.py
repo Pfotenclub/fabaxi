@@ -22,8 +22,6 @@ class Nightclub(commands.Cog): # create a class for our cog that inherits from c
         self.bot = bot
     @commands.slash_command(name="nightclub", description="Enter the nightclub", guild_ids=[1056514064081231872])
     async def nightclub(self, ctx):
-        if ctx.author.id != 327880195476422656:
-            return await ctx.respond("You are not the owner of the bot!", ephemeral=True)
         view = discord.ui.View(timeout=None)
         view.add_item(NightclubInterface())
 
