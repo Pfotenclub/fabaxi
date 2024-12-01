@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -5,6 +6,9 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, Integer, BigInteger, insert, select, delete
 
 Base = declarative_base()
+logging.basicConfig(level=logging.WARN,
+                    format='%(asctime)s %(message)s',
+                    handlers=[logging.StreamHandler()])
 
 class KarmaTable(Base):
     __tablename__ = "karma"
@@ -43,12 +47,22 @@ class Database:
 
     async def create_user_record_in_karma(self, user_id, guild_id):
         async with self.get_session() as session:
+            existing_record = await session.execute(
+                select(KarmaTable)
+                .where(KarmaTable.user_id == user_id, KarmaTable.guild_id == guild_id)
+            )
+            if existing_record.scalars().first():
+                logging.error(f"User record already exists for user_id={user_id}, guild_id={guild_id}")
+                return
+
             insert_stmt = insert(KarmaTable).values(
                 user_id=user_id,
                 guild_id=guild_id,
                 karma=0
             )
             await session.execute(insert_stmt)
+            await session.commit()
+            logging.info(f"Created new karma record for user_id={user_id}, guild_id={guild_id}")
 
 
     async def adjust_karma_for_user(self, user_id, guild_id, amount: int):
@@ -81,7 +95,11 @@ class Database:
     async def get_user_karma(self, user_id, guild_id):
         async with self.get_session() as session:
             record = await session.get(KarmaTable, {"user_id": user_id, "guild_id": guild_id})
-            return record.karma if record else 0
+            if record:
+                return record.karma
+            else:
+                await self.create_user_record_in_karma(user_id, guild_id)
+                return 0
 
     async def adjust_karma_for_user(self, user_id, guild_id, amount: int):
         async with self.get_session() as session:
