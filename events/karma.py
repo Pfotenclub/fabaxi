@@ -156,7 +156,7 @@ class Karma(commands.Cog):
     async def check_karma(self, ctx, member: discord.Member = None):
         """Check karma for a user."""
         member = member or ctx.author
-        karma = self.db.get_user_karma(member.id, ctx.guild.id)
+        karma = await self.db.get_user_karma(member.id, ctx.guild.id)
         await ctx.respond(f"{member.display_name} has {karma or 0} karma.")
 
     @discord.slash_command(name="add_reward")
