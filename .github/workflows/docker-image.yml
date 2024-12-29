@@ -15,7 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
-      run: docker build -t ${{ env.DOCKER_IMAGE_NAME }} .
+      run: docker buildx build -t ${{ env.DOCKER_IMAGE_NAME }} .
 
     - name: Save Docker Image as Tar
       run: docker save -o image.tar ${{ env.DOCKER_IMAGE_NAME }}
