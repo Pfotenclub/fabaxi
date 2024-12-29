@@ -30,7 +30,7 @@ jobs:
         host: ${{ secrets.SERVER_IP }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: ./image.tar
+        source: image.tar
         target: /home/chatgpaint/image.tar
     - name: Load Docker Image on SSH Server and Run
       uses: appleboy/ssh-action@master
@@ -39,7 +39,7 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          docker load -i ~/image.tar
+          docker load -i /home/chatgpaint/image.tar
           docker stop ${{ secrets.DOCKER_IMAGE_NAME }} || true
           docker rm ${{ secrets.DOCKER_IMAGE_NAME }} || true
-          docker run -d -p 8000:8000 --name ${{ secrets.DOCKER_IMAGE_NAME }} -e TOKEN=${{secrets.DISCORD_BOT_TOKEN}} -v ~/db:/db ${{ secrets.DOCKER_IMAGE_NAME }}
+          docker run -d -p 8000:8000 --name ${{ secrets.DOCKER_IMAGE_NAME }} -e TOKEN=${{secrets.DISCORD_BOT_TOKEN}} -v /home/chatgpaint/db:/db ${{ secrets.DOCKER_IMAGE_NAME }}
