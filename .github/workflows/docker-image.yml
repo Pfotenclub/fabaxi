@@ -30,6 +30,7 @@ jobs:
         host: ${{ secrets.SERVER_IP }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT }}
         source: image.tar
         target: /home/chatgpaint/
     - name: Load Docker Image on SSH Server and Run
@@ -38,6 +39,7 @@ jobs:
         host: ${{ secrets.SERVER_IP }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT }}
         script: |
           docker load -i /home/chatgpaint/image.tar
           docker stop ${{ secrets.DOCKER_IMAGE_NAME }} || true
