@@ -15,10 +15,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
-      run: docker build -t $vars.DOCKER_IMAGE_NAME .
+      run: docker build -t $env.DOCKER_IMAGE_NAME .
 
     - name: Save Docker Image as Tar
-      run: docker save -o image.tar $vars.DOCKER_IMAGE_NAME
+      run: docker save -o image.tar $env.DOCKER_IMAGE_NAME
 
     - name: Copy Docker Image to SSH Server
       uses: appleboy/scp-action@master
@@ -36,6 +36,6 @@ jobs:
         key: $secrets.SSH_PRIVATE_KEY
         script: |
           docker load -i ~/image.tar
-          docker stop $vars.DOCKER_IMAGE_NAME || true
-          docker rm $vars.DOCKER_IMAGE_NAME || true
-          docker run -d -p 8000:8000 --name $vars.DOCKER_IMAGE_NAME -e TOKEN=$secrets.DISCORD_BOT_TOKEN -v ~/db:/db $vars.DOCKER_IMAGE_NAME
+          docker stop $env.DOCKER_IMAGE_NAME || true
+          docker rm $env.DOCKER_IMAGE_NAME || true
+          docker run -d -p 8000:8000 --name $env.DOCKER_IMAGE_NAME -e TOKEN=$secrets.DISCORD_BOT_TOKEN -v ~/db:/db $env.DOCKER_IMAGE_NAME
