@@ -1,0 +1,6 @@
+.github
+.venv
+data
+.env
+Dockerfile
+README.md

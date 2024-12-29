@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -26,7 +27,10 @@ class RewardsTable(Base):
 
 class Database:
     def __init__(self, db_url="sqlite+aiosqlite:///./../data/karma.db"):
-        self.engine = create_async_engine(db_url, future=True, echo=True)
+        if os.environ.get("DOCKER") is None:
+            self.engine = create_async_engine(db_url, future=True, echo=True)
+        else:
+            self.engine = create_async_engine("sqlite+aiosqlite:////db/karma.db", future=True, echo=True)
         self.SessionLocal = sessionmaker(bind=self.engine, class_=AsyncSession, expire_on_commit=False)
 
     async def init_db(self):
