@@ -27,7 +27,7 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         source: ./image.tar
-        target: ~/image.tar
+        target: /home/chatgpaint/image.tar
     - name: Load Docker Image on SSH Server and Run
       uses: appleboy/ssh-action@master
       with:
