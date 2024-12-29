@@ -20,6 +20,10 @@ jobs:
     - name: Save Docker Image as Tar
       run: docker save -o image.tar ${{ secrets.DOCKER_IMAGE_NAME }}
 
+    - name: Set permissions
+      run: chmod 755 ./image.tar
+    - name: Check file existence
+      run: ls -l ./image.tar
     - name: Copy Docker Image to SSH Server
       uses: appleboy/scp-action@master
       with:
