@@ -48,7 +48,7 @@ jobs:
           docker load -i /home/chatgpaint/image.tar
           docker stop ${{ secrets.DOCKER_IMAGE_NAME }} || true
           docker rm ${{ secrets.DOCKER_IMAGE_NAME }} || true
-          docker run -d \ 
+          docker run -d \
             -e PROD_TOKEN=${{ secrets.PROD_TOKEN }} \
             -e ENVIRONMENT=${{ secrets.ENVIRONMENT }} \
             -p ${{ secrets.STATUS_UPDATE_PORT }}:${{ secrets.STATUS_UPDATE_PORT }} --name ${{ secrets.DOCKER_IMAGE_NAME }} -v /home/chatgpaint/db:/db ${{ secrets.DOCKER_IMAGE_NAME }}
