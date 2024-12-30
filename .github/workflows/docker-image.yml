@@ -31,7 +31,7 @@ jobs:
     - name: Check file existence
       run: ls -l ./image.tar
     - name: Copy Docker Image to SSH Server
-      uses: appleboy/scp-action@master
+      uses: appleboy/scp-action@3d59448764c0f94f80ffcfea943710c44b75cb43
       with:
         host: ${{ secrets.SERVER_IP }}
         username: ${{ secrets.SSH_USER }}
@@ -40,7 +40,7 @@ jobs:
         source: image.tar
         target: /home/chatgpaint/
     - name: Load Docker Image on SSH Server and Run
-      uses: appleboy/ssh-action@master
+      uses: appleboy/ssh-action@66aa4d343bf909ac4fa0ac52f4e62a9adc354c95
       with:
         host: ${{ secrets.SERVER_IP }}
         username: ${{ secrets.SSH_USER }}
