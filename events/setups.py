@@ -1,4 +1,6 @@
 import time
+from urllib.request import Request
+
 from fastapi import FastAPI
 import discord
 import uvicorn
@@ -8,9 +10,12 @@ import threading
 from dotenv import load_dotenv
 import os
 
+from prometheus_client import Summary, CONTENT_TYPE_LATEST, generate_latest
+
 load_dotenv()
 
 app = FastAPI()
+REQUEST_LATENCY = Summary('request_latency_seconds', 'Request Latency')
 
 @app.post('/chatgpaint-ping')
 def ping():
@@ -19,6 +24,10 @@ def ping():
 @app.get('/health_check')
 def health_check():
     return {"Status": "Ok","Code": 200, "Time": time.time()}
+
+@app.get("/metrics")
+async def metrics():
+    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
 
 def run():
     print("Starting FastAPI server")
