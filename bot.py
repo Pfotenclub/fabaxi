@@ -3,8 +3,15 @@ import discord
 import os # default module
 from dotenv import load_dotenv
 load_dotenv() # load all the variables from the env file
-# bot = commands.Bot(debug_guilds=[1001916230069911703], intents=discord.Intents.all())
-bot = commands.Bot(intents=discord.Intents.all())
+environment = os.getenv('ENVIRONMENT') # get the environment variable
+bot = None
+if environment == 'PROD':
+    TOKEN = os.getenv('PROD_TOKEN')
+    bot = commands.Bot(intents=discord.Intents.all())
+elif environment == 'DEV':
+    TOKEN = os.getenv('DEV_TOKEN')
+    bot = commands.Bot(debug_guilds=[1001916230069911703], intents=discord.Intents.all())
+
 
 @bot.event
 async def on_ready():
@@ -50,5 +57,16 @@ if __name__ == '__main__':
             else:
                 print(f"{i} wurde geladen") # print that the file was loaded
 
-
-bot.run(os.getenv('TOKEN')) # run the bot with the token
+    if os.path.isdir("./../poke"):
+        os.chdir("./../poke")
+    else:
+        os.chdir("./../app/poke")
+    for i in os.listdir():
+        if i.endswith(".py"):
+            try:
+                bot.load_extension(f"poke.{i[:-3]}")
+            except Exception as error:
+                print('{} konnte nicht geladen werden. [{}]'.format(i, error))
+            else:
+                print(f"{i} wurde geladen")
+bot.run(TOKEN) # run the bot with the token
