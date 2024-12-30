@@ -20,7 +20,7 @@ REQUEST_LATENCY = Summary('request_latency_seconds', 'Request Latency')
 def ping():
     return "OK", 200
 
-@app.get('/health_check')
+@app.get('/chatgpaint_health_check')
 def health_check():
     return {"Status": "Ok","Code": 200, "Time": time.time()}
 

@@ -1,0 +1,50 @@
+name: Docker Image CI
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker image
+      run: docker buildx build -t ${{ secrets.DOCKER_IMAGE_NAME }} .
+
+    - name: Save Docker Image as Tar
+      run: docker save -o image.tar ${{ secrets.DOCKER_IMAGE_NAME }}
+
+    - name: Set permissions
+      run: chmod 755 ./image.tar
+    - name: Check file existence
+      run: ls -l ./image.tar
+    - name: Copy Docker Image to SSH Server
+      uses: appleboy/scp-action@3d59448764c0f94f80ffcfea943710c44b75cb43
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT }}
+        source: image.tar
+        target: /home/chatgpaint/
+    - name: Load Docker Image on SSH Server and Run
+      uses: appleboy/ssh-action@66aa4d343bf909ac4fa0ac52f4e62a9adc354c95
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT }}
+        script: |
+          docker load -i /home/chatgpaint/image.tar
+          docker stop ${{ secrets.DOCKER_IMAGE_NAME }} || true
+          docker rm ${{ secrets.DOCKER_IMAGE_NAME }} || true
+          docker run -d \
+            -e PROD_TOKEN=${{ secrets.PROD_TOKEN }} \
+            -e ENVIRONMENT=${{ secrets.ENVIRONMENT }} \
+            -p ${{ secrets.STATUS_UPDATE_PORT }}:${{ secrets.STATUS_UPDATE_PORT }} --name ${{ secrets.DOCKER_IMAGE_NAME }} -v /home/chatgpaint/db:/db ${{ secrets.DOCKER_IMAGE_NAME }}

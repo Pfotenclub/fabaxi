@@ -8,8 +8,15 @@ from dotenv import load_dotenv
 from prometheus_client import Histogram
 
 load_dotenv() # load all the variables from the env file
-# bot = commands.Bot(debug_guilds=[1001916230069911703], intents=discord.Intents.all())
-bot = commands.Bot(intents=discord.Intents.all())
+environment = os.getenv('ENVIRONMENT') # get the environment variable
+bot = None
+if environment == 'PROD':
+    TOKEN = os.getenv('PROD_TOKEN')
+    bot = commands.Bot(intents=discord.Intents.all())
+elif environment == 'DEV':
+    TOKEN = os.getenv('DEV_TOKEN')
+    bot = commands.Bot(debug_guilds=[1001916230069911703], intents=discord.Intents.all())
+
 
 logging.basicConfig(level=logging.WARN,
                     format='%(asctime)s %(message)s',
@@ -71,7 +78,7 @@ if __name__ == '__main__':
             except Exception as error: # if there is an error
                 logging.error(f'{i} could not be loaded. [{error}]') # print the error
             else:
+
                 logging.error(f"{i} was loaded correctly") # print that the file was loaded
 
-
-bot.run(os.getenv('TOKEN')) # run the bot with the token
+bot.run(TOKEN) # run the bot with the token

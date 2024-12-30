@@ -9,8 +9,9 @@ WORKDIR /bot
 
 RUN pip install -r requirements.txt
 ENV DOCKER=true
+ENV STATUS_UPDATE_PORT=7958
 
 VOLUME ["/db"]
-EXPOSE 8000
+EXPOSE 7958
 
 ENTRYPOINT ["python", "bot.py"]
