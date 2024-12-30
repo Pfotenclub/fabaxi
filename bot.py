@@ -52,5 +52,3 @@ if __name__ == '__main__':
 
 
 bot.run(os.getenv('TOKEN')) # run the bot with the token
-
-# Test
