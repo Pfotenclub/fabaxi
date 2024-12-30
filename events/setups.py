@@ -16,7 +16,7 @@ app = FastAPI()
 def ping():
     return "OK", 200
 
-@app.get('/health_check')
+@app.get('/chatgpaint_health_check')
 def health_check():
     return {"Status": "Ok", "Time": time.time()}
 
