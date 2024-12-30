@@ -18,7 +18,7 @@ def ping():
 
 @app.get('/chatgpaint_health_check')
 def health_check():
-    return {"Status": "Ok", "Time": time.time()}
+    return {"Status": "Ok","Code": 200, "Time": time.time()}
 
 def run():
     print("Starting FastAPI server")
