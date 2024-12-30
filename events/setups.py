@@ -1,7 +1,5 @@
 import time
-from urllib.request import Request
 
-from fastapi import FastAPI
 import discord
 import uvicorn
 from discord.ext import commands, tasks
@@ -9,6 +7,7 @@ import random
 import threading
 from dotenv import load_dotenv
 import os
+from fastapi import FastAPI, Response
 
 from prometheus_client import Summary, CONTENT_TYPE_LATEST, generate_latest
 
@@ -27,7 +26,8 @@ def health_check():
 
 @app.get("/metrics")
 async def metrics():
-    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
+    metrics_data = generate_latest()
+    return Response(content=metrics_data, media_type=CONTENT_TYPE_LATEST)
 
 def run():
     print("Starting FastAPI server")
