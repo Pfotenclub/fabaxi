@@ -34,6 +34,7 @@ async def on_ready():
 
 @bot.event
 async def on_command(ctx):
+    logging.debug("i fucking hate my life")
     command_name = ctx.command.name
     start_time = time.time()
     await bot.invoke(ctx)
