@@ -17,8 +17,8 @@ class FluffBasic(commands.Cog): # create a class for our cog that inherits from 
         self.db = Database()
         self.bot.loop.create_task(self.db.init_db())
 
-    fluffBasic = discord.SlashCommandGroup(name="fluffs-basic", description="Basic Fluffs Commands") # create a group of slash commands
-    @fluffBasic.command(name="intro", description="Introduction to the Fluffs Feature and select your starter Fluff")
+    fluffCommandGroup = discord.SlashCommandGroup(name="fluff-basic", description="Fluff Commands") # create a group of slash commands
+    @fluffCommandGroup.command(name="intro", description="Introduction to the Fluffs Feature and select your starter Fluff")
     async def intro(self, ctx):
         await ctx.defer()
 
@@ -42,7 +42,7 @@ class FluffBasic(commands.Cog): # create a class for our cog that inherits from 
         embed.set_footer(text="Click the button below to get your starter Fluff!")
         await ctx.respond(embed=embed, view=view)
 
-    @fluffBasic.command(name="fluffs", description="View all the Fluffs you own")
+    @fluffCommandGroup.command(name="fluffs", description="View all the Fluffs you own")
     async def fluffs(self, ctx):
         await ctx.defer()
 
