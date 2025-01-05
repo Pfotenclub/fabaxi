@@ -19,47 +19,59 @@ class TempVoice(commands.Cog): # create a class for our cog that inherits from c
             joinToCreateVoice = 1234040036299640844
             joinToCreateParent = 1234039999775772768
         elif environment == 'PROD':
-            joinToCreateVoice = 1229081255115624549 # the voice channel id that will be used to create the channel - Pfotenclub Server
-            joinToCreateParent = 1058459667887575131 # the category id where the channel will be created - Pfotenclub Server
-
-        if before.channel is None: # if the member was not in a voice channel before
-
-            if after.channel.id == joinToCreateVoice: # if the member joined the join to create voice channel
-                await createTempVoice(self.bot, joinToCreateParent, member) # create the temp channel
-
-
-        elif after.channel is None: # if the member is not in a voice channel after
-
-            if before.channel.id == joinToCreateVoice: # if the member left the join to create voice channel
-                return
-            elif len(before.channel.members) == 0 and before.channel.category.id == joinToCreateParent: # if there are no more users in the channel
-                await deleteTempVoice(self.bot, before.channel.id) # delete the channel
-            
+            joinToCreateVoice = 1229081255115624549
+            joinToCreateParent = 1058459667887575131
         
-
-
-        else: # if the member moved to another channel
-            if before.channel.id == after.channel.id: # if the member is in the same channel
-                return
-            elif before.channel.id == joinToCreateVoice or before.channel.id: # if the member was in the join to create voice channel
-                return
-            elif before.channel.category_id != joinToCreateParent and after.channel.category_id == joinToCreateParent and after.channel.id != joinToCreateVoice: # if member joined a temp channel and was not in a temp channel before
-                return
-            elif before.channel.category_id == joinToCreateParent and after.channel.category_id != joinToCreateParent: # if member switched from a temp channel to a normal channel
-                if len(before.channel.members) == 0: # if there are no more users in the channel
-                    await deleteTempVoice(self.bot, before.channel.id) # delete the channel
-            elif after.channel.id == joinToCreateVoice: # if the member switched to the join to create voice channel
-                if before.channel.category_id != joinToCreateParent: # if the member was not in a temp channel before
-                    await createTempVoice(self.bot, joinToCreateParent, member) # create the temp channel
-                elif before.channel.category_id == joinToCreateParent and before.channel.id != joinToCreateVoice: # if the member was in a temp channel before and joins the join to create voice channel
-                    if len(before.channel.members) == 0: # if there are no more users in the channel
-                        await deleteTempVoice(self.bot, before.channel.id) # delete the channel
-                if before.channel.category_id == joinToCreateParent and after.channel.id == joinToCreateVoice:
-                    await createTempVoice(self.bot, joinToCreateParent, member) # create the temp channel
-            elif before.channel.category_id == joinToCreateParent and after.channel.category_id == joinToCreateParent: # if the member moved between temp channels
-                if len(before.channel.members) == 0: # if there are no more users in the channel
-                    await deleteTempVoice(self.bot, before.channel.id) # delete the channel
-        pass
+        # if member was not in a voice channel before
+        if before.channel is None:
+            # if member is in a voice channel now
+            if after.channel is not None:
+                # if the member joined the joinToCreateVoice channel
+                if after.channel.id == joinToCreateVoice:
+                    await createTempVoice(self.bot, joinToCreateParent, member) # create a temporary voice channel for the member
+        # if member left a voice channel (disconnect)
+        elif after.channel is None:
+            # if member was not in the category of the temp channels before
+            if before.channel.category_id != joinToCreateParent:
+                return # do nothing - we only care about temp channels
+            # if member was in the joinToCreateVoice channel before
+            if before.channel.id == joinToCreateVoice:
+                return # do nothing - joinToCreateVoice is not a temp channel
+            if len(before.channel.members) == 0:
+                await deleteTempVoice(self.bot, before.channel.id) # delete the temporary voice channel if it is empty
+        
+        # if member moved from one voice channel to another - could also do it in a else but this is better for readability
+        elif before.channel and after.channel:
+            # if member moved from a normal channel to another normal channel
+            if before.channel.category_id != joinToCreateParent and after.channel.category_id != joinToCreateParent:
+                return # do nothing - we only care about temp channels
+            # if member moved from a normal channel to a temp channel
+            if before.channel.category_id != joinToCreateParent and after.channel.category_id == joinToCreateParent:
+                # if member moved to the joinToCreateVoice channel
+                if after.channel.id == joinToCreateVoice: 
+                    await createTempVoice(self.bot, joinToCreateParent, member) # create a temporary voice channel for the member
+            # if member moved from a temp channel to a normal channel
+            elif before.channel.category_id == joinToCreateParent and after.channel.category_id != joinToCreateParent:
+                # if member moved from the joinToCreateVoice channel
+                if before.channel.id == joinToCreateVoice:
+                    return # do nothing - joinToCreateVoice is not a temp channel
+                # if member was the last one in the channel
+                elif len(before.channel.members) == 0:
+                    await deleteTempVoice(self.bot, before.channel.id) # delete the temporary voice channel
+            # if member moved from a temp channel to another temp channel
+            elif before.channel.category_id == joinToCreateParent and after.channel.category_id == joinToCreateParent:
+                # if member moved from the joinToCreateVoice channel
+                if before.channel.id == joinToCreateVoice:
+                    return # do nothing - joinToCreateVoice is not a temp channel and user was probably moved by the bot
+                # if member moved to the joinToCreateVoice channel
+                if before.channel.id != joinToCreateVoice and after.channel.id == joinToCreateVoice:
+                    # if member was the last one in the channel he left
+                    if len(before.channel.members) == 0: await deleteTempVoice(self.bot, before.channel.id) # delete the temporary voice channel
+                    await createTempVoice(self.bot, joinToCreateParent, member) # create a temporary voice channel for the member
+                # if member moved from a temp channel to another temp channel
+                if before.channel.id != joinToCreateVoice and after.channel.id != joinToCreateVoice:
+                    # if member was the last one in the channel he left
+                    if len(before.channel.members) == 0: await deleteTempVoice(self.bot, before.channel.id) # delete the temporary voice channel
 
 
 def setup(bot): # this is called by Pycord to setup the cog
