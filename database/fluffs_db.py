@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
-from sqlalchemy import Column, Integer, BigInteger, String, ForeignKey, insert, select, delete
+from sqlalchemy import Column, Integer, BigInteger, String, ForeignKey, Boolean, insert, select, delete
 
 Base = declarative_base()
 logging.basicConfig(level=logging.INFO,
@@ -33,6 +33,8 @@ class FluffUserTable(Base):
     fluff_id = Column(Integer, ForeignKey("master_fluffs.fluff_id"))
     name = Column(String)
     description = Column(String)
+    type1 = Column(String)
+    type2 = Column(String, nullable=True)
     level = Column(Integer)
     exp = Column(Integer)
     max_hp = Column(Integer)
@@ -40,17 +42,18 @@ class FluffUserTable(Base):
     attack = Column(Integer)
     defense = Column(Integer)
     speed = Column(Integer)
+    main = Column(Boolean, default=False)
     master_fluff_relation = relationship("MasterFluffTable", back_populates="fluff_user_relation")
 
 
 class Database:
     def __init__(self, db_url="sqlite+aiosqlite:///./../data/fluffs.db"):
         if os.environ.get("DOCKER") is None:
-            #self.engine = create_async_engine(db_url, future=True, echo=False)
-            self.engine = create_async_engine(db_url, future=True, echo=True)
+            self.engine = create_async_engine(db_url, future=True, echo=False)
+            #self.engine = create_async_engine(db_url, future=True, echo=True)
         else:
-            #self.engine = create_async_engine("sqlite+aiosqlite:////db/fluffs.db", future=True, echo=False)
-            self.engine = create_async_engine("sqlite+aiosqlite:////db/fluffs.db", future=True, echo=True)
+            self.engine = create_async_engine("sqlite+aiosqlite:////db/fluffs.db", future=True, echo=False)
+            #self.engine = create_async_engine("sqlite+aiosqlite:////db/fluffs.db", future=True, echo=True)
         self.SessionLocal = sessionmaker(bind=self.engine, class_=AsyncSession, expire_on_commit=False)
 
     async def init_db(self):
@@ -74,7 +77,7 @@ class Database:
                 .where(MasterFluffTable.fluff_id == fluff_id)
             )
             return result.scalars().first()
-    async def create_fluff_from_master(self, user_id, guild_id, fluff_id):
+    async def create_fluff_from_master(self, user_id, guild_id, fluff_id, main=False):
         async with self.get_session() as session:
             master_fluff = await self.get_master_fluff_by_id(fluff_id)
             fluff = FluffUserTable(
@@ -83,19 +86,22 @@ class Database:
                 fluff_id=fluff_id,
                 name=master_fluff.name,
                 description=master_fluff.description,
+                type1=master_fluff.type1,
+                type2=master_fluff.type2,
                 level=1,
                 exp=0,
                 max_hp=master_fluff.hp,
                 hp=master_fluff.hp,
                 attack=master_fluff.attack,
                 defense=master_fluff.defense,
-                speed=master_fluff.speed
+                speed=master_fluff.speed,
+                main=main
             )
             session.add(fluff)
             await session.commit()
             return fluff
     
-    async def create_fluff(self, user_id, guild_id, fluff_id, name, description, level, exp, hp, attack, defense, speed):
+    async def create_fluff(self, user_id, guild_id, fluff_id, name, description, type1, level, exp, hp, attack, defense, speed, type2=None, main=False):
         async with self.get_session() as session:
             fluff = FluffUserTable(
                 user_id=user_id,
@@ -103,13 +109,16 @@ class Database:
                 fluff_id=fluff_id,
                 name=name,
                 description=description,
+                type1=type1,
+                type2=type2,
                 level=level,
                 exp=exp,
                 max_hp=hp,
                 hp=hp,
                 attack=attack,
                 defense=defense,
-                speed=speed
+                speed=speed,
+                main=main
             )
             session.add(fluff)
             await session.commit()
@@ -130,3 +139,4 @@ class Database:
                 .where(FluffUserTable.fluff_user_id == fluff_id)
             )
             return result.scalars().first()
+    
