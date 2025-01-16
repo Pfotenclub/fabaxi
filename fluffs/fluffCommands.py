@@ -183,6 +183,7 @@ class BattleAcceptButton(discord.ui.Button):
                 super().__init__(style=style, label=label, custom_id=str(custom_id))
                 self.challenger = challenger
                 self.opponent = opponent
+                self.db = Database()
 
             async def callback(self, interaction: discord.Interaction):
                 if interaction.user.id != self.opponent.id: return await interaction.respond("You can't accept or decline a challenge that wasn't sent to you!", ephemeral=True)
@@ -222,21 +223,60 @@ class BattleAcceptButton(discord.ui.Button):
                     )
                 )
                 embed.set_footer(text="The Battle will begin shortly!")
-                await interaction.respond(embed=embed)
                 await interaction.message.delete()
+                await interaction.respond(embed=embed)
+                embed.set_footer(text="The Battle has begun!")
                 
                 await asyncio.sleep(5)
-                
-                
 
-                                            
+                while challenger_hp > 0 and opponent_hp > 0:
+                    base_damage = challenger_main.attack - opponent_main.defense / 2
+                    if base_damage < 1: base_damage = 1
+                    if random.randint(1, 100) <= 5: base_damage *= 2
+                    
+                    opponent_hp -= base_damage
+                    if opponent_hp < 0: opponent_hp = 0
+                    embed.clear_fields()
+                    embed.add_field(
+                        name=f"{self.challenger.display_name}'s Fluff",
+                        value=(
+                            f"{challenger_main.name}\n"
+                            f"Level: {challenger_main.level}\nHP: {challenger_hp}\n"
+                        )
+                    )
+                    embed.add_field(
+                        name=f"{self.opponent.display_name}'s Fluff",
+                        value=(
+                            f"{opponent_main.name}\n"
+                            f"Level: {opponent_main.level}\nHP: {opponent_hp}\n"
+                        )
+                    )
+                    await interaction.edit_original_response(embed=embed)
+                    await asyncio.sleep(3)
+                    if opponent_hp <= 0: break
+                    base_damage = opponent_main.attack - challenger_main.defense / 2
+                    if base_damage < 1: base_damage = 1
+                    if random.randint(1, 100) <= 5: base_damage *= 2
+                    challenger_hp -= base_damage
+                    if challenger_hp < 0: challenger_hp = 0
+                    embed.clear_fields()
+                    embed.add_field(
+                        name=f"{self.challenger.display_name}'s Fluff",
+                        value=(
+                            f"{challenger_main.name}\n"
+                            f"Level: {challenger_main.level}\nHP: {challenger_hp}\n"
+                        )
+                    )
+                    embed.add_field(
+                        name=f"{self.opponent.display_name}'s Fluff",
+                        value=(
+                            f"{opponent_main.name}\n"
+                            f"Level: {opponent_main.level}\nHP: {opponent_hp}\n"
+                        )
+                    )
+                    await interaction.edit_original_response(embed=embed)
+                    await asyncio.sleep(3)
 
 
 def setup(bot): # this is called by Pycord to setup the cog
     bot.add_cog(FluffBasic(bot)) # add the cog to the bot
-
-async def attack_fluff(self, fluff, opponent):
-    fighters = [fluff, opponent] if fluff.speed >= opponent.speed else [opponent, fluff]
-    if random.randint(1, 100) <= 10:
-        fighters.reverse()
-        # base_damage = attacker.attack - defender.defense / 2
