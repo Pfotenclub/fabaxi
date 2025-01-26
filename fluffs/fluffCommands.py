@@ -15,9 +15,9 @@ class FluffBasic(commands.Cog): # create a class for our cog that inherits from 
                     handlers=[logging.StreamHandler()])
 
     def __init__(self, bot): # this is a special method that is called when the cog is loaded
-        self.bot = bot
-        self.db = Database()
-        self.bot.loop.create_task(self.db.init_db())
+        self.bot = bot # save the bot instance
+        self.db = Database() # create an instance of the database class from fluffs_db.py
+        self.bot.loop.create_task(self.db.init_db()) # create a task to initialize the database
 
     fluffCommandGroup = discord.SlashCommandGroup(name="fluffs", description="Fluff Commands") # create a group of slash commands
     @fluffCommandGroup.command(name="intro", description="Introduction to the Fluffs Feature and select your starter Fluff")
@@ -36,6 +36,7 @@ class FluffBasic(commands.Cog): # create a class for our cog that inherits from 
         embed.add_field(name="Visit the regions!", value=f"Travel to different regions to discover new Fluffs and meet other trainers.\nEach region has its own unique Fluffs and challenges to explore! There are also special regions like the CCH :eyes:", inline=False)
         embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1234978354650808330/1323415501203832995/Fluff_1.png?ex=67746e3b&is=67731cbb&hm=925098fe7e436265965b9aefb591424ff77617643479709b11c9b49a32b4dcfb&")
 
+        # Check if user already has a Fluff. If not, show button to get starter Fluff
         if await self.db.get_fluffs_by_user(ctx.author.id, ctx.guild.id):
             return await ctx.respond(embed=embed)
         
@@ -63,12 +64,16 @@ class FluffBasic(commands.Cog): # create a class for our cog that inherits from 
     
     @fluffCommandGroup.command(name="battle", description="Challenge another player to a Fluff battle")
     async def battle(self, ctx, user: discord.Member):
+        # Check if user has any Fluffs
         challenger_fluffs = await self.db.get_fluffs_by_user(ctx.author.id, ctx.guild.id)
         if not challenger_fluffs: return await ctx.respond("You can't battle without any Fluffs! Use the /fluffs-basic intro command to get started.", ephemeral=True)
+        # If user is a bot, return error message
         if user.bot: return await ctx.respond("You can't battle a bot!", ephemeral=True)
+        # Check if user has any Fluffs
         oponent_fluffs = await self.db.get_fluffs_by_user(user.id, ctx.guild.id)
         if not oponent_fluffs: return await ctx.respond("You can't battle someone who doesn't have any fluffs!", ephemeral=True)
 
+        # Get main Fluffs for both users
         challenger_main = None
         for fluff in challenger_fluffs:
             if fluff.main:
@@ -80,6 +85,7 @@ class FluffBasic(commands.Cog): # create a class for our cog that inherits from 
                 opponent_main = fluff
                 break
 
+        # Send battle challenge message with accept and decline buttons for the opponent
         embed = discord.Embed(
             title=f"{ctx.author.display_name} has challenged you to a fluff battle!",
             description=f"{user.mention}, do you accept the challenge?",
@@ -103,18 +109,19 @@ class FluffBasic(commands.Cog): # create a class for our cog that inherits from 
         view.add_item(BattleAcceptButton(discord.ButtonStyle.success, "Accept", 1, challenger=ctx.author, opponent=user))
         view.add_item(BattleAcceptButton(discord.ButtonStyle.danger, "Decline", 2, challenger=ctx.author, opponent=user))
 
-        await ctx.respond(embed=embed, view=view)
+        await ctx.respond(f"{user.mention}", embed=embed, view=view)
 
         
 
         
-
+# Gives the user the option to get a starter Fluff if they don't already have one
 class GetStarterFluffButton(discord.ui.Button):
     def __init__(self):
-        super().__init__(style=discord.ButtonStyle.secondary, label="Get Starter Fluff", custom_id="getStarterFluff")
-        self.db = Database()
+        super().__init__(style=discord.ButtonStyle.secondary, label="Get Starter Fluff", custom_id="getStarterFluff") # create a button with the label "Get Starter Fluff" and the custom_id "getStarterFluff"
+        self.db = Database() # create an instance of the database class from fluffs_db.py
 
     async def callback(self, interaction: discord.Interaction):
+        # Gets the predefined starter Fluffs from the database
         starter1 = await self.db.get_master_fluff_by_id(1)
         starter2 = await self.db.get_master_fluff_by_id(4)
         starter3 = await self.db.get_master_fluff_by_id(7)
@@ -165,6 +172,7 @@ class GetStarterFluffButton(discord.ui.Button):
 
         await interaction.response.send_message(embed=embed, view=view)
 
+# Gives the user his selected starter Fluff
 class SelectStarterFluffButton(discord.ui.Button):
     def __init__(self, custom_id : int, name : str):
         super().__init__(style=discord.ButtonStyle.secondary, label=name, custom_id=str(custom_id))
@@ -178,6 +186,7 @@ class SelectStarterFluffButton(discord.ui.Button):
         await self.db.create_fluff_from_master(interaction.user.id, interaction.guild.id, int(self.custom_id), main=True)
         await interaction.response.send_message(f"Congratulations! You have received {self.label} as your starter Fluff.")
 
+# Gives the opponent the option to accept or decline the battle challenge
 class BattleAcceptButton(discord.ui.Button):
             def __init__(self, style, label, custom_id : int, challenger : discord.User, opponent : discord.User):
                 super().__init__(style=style, label=label, custom_id=str(custom_id))
@@ -187,7 +196,9 @@ class BattleAcceptButton(discord.ui.Button):
 
             async def callback(self, interaction: discord.Interaction):
                 if interaction.user.id != self.opponent.id: return await interaction.respond("You can't accept or decline a challenge that wasn't sent to you!", ephemeral=True)
-                if self.custom_id == "2": return await interaction.respond(f"{interaction.user.display_name} has declined the challenge!")
+                if self.custom_id == "2": 
+                    await interaction.respond(f"{interaction.user.display_name} has declined the challenge!")
+                    return await interaction.message.delete()
 
                 challenger_fluffs = await self.db.get_fluffs_by_user(self.challenger.id, interaction.guild.id)
                 opponent_fluffs = await self.db.get_fluffs_by_user(self.opponent.id, interaction.guild.id)
@@ -229,54 +240,66 @@ class BattleAcceptButton(discord.ui.Button):
                 
                 await asyncio.sleep(5)
 
+                attacker = 1
+                if opponent_main.speed > challenger_main.speed: attacker = 2
+
                 while challenger_hp > 0 and opponent_hp > 0:
-                    base_damage = challenger_main.attack - opponent_main.defense / 2
-                    if base_damage < 1: base_damage = 1
-                    if random.randint(1, 100) <= 5: base_damage *= 2
-                    
-                    opponent_hp -= base_damage
-                    if opponent_hp < 0: opponent_hp = 0
-                    embed.clear_fields()
-                    embed.add_field(
-                        name=f"{self.challenger.display_name}'s Fluff",
-                        value=(
-                            f"{challenger_main.name}\n"
-                            f"Level: {challenger_main.level}\nHP: {challenger_hp}\n"
-                        )
-                    )
-                    embed.add_field(
-                        name=f"{self.opponent.display_name}'s Fluff",
-                        value=(
-                            f"{opponent_main.name}\n"
-                            f"Level: {opponent_main.level}\nHP: {opponent_hp}\n"
-                        )
-                    )
+                    if attacker == 1: 
+                        effective = self.db.is_effective()
+                        opponent_hp = challangerAttackingOpponent(challenger_main, opponent_main, opponent_hp)
+                        attacker = 2
+                    updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp)
                     await interaction.edit_original_response(embed=embed)
                     await asyncio.sleep(3)
-                    if opponent_hp <= 0: break
-                    base_damage = opponent_main.attack - challenger_main.defense / 2
-                    if base_damage < 1: base_damage = 1
-                    if random.randint(1, 100) <= 5: base_damage *= 2
-                    challenger_hp -= base_damage
-                    if challenger_hp < 0: challenger_hp = 0
-                    embed.clear_fields()
-                    embed.add_field(
-                        name=f"{self.challenger.display_name}'s Fluff",
-                        value=(
-                            f"{challenger_main.name}\n"
-                            f"Level: {challenger_main.level}\nHP: {challenger_hp}\n"
-                        )
-                    )
-                    embed.add_field(
-                        name=f"{self.opponent.display_name}'s Fluff",
-                        value=(
-                            f"{opponent_main.name}\n"
-                            f"Level: {opponent_main.level}\nHP: {opponent_hp}\n"
-                        )
-                    )
+
+                    if opponent_hp == 0: break
+
+                    if attacker == 2:
+                        challenger_hp = opponentAttackingChallanger(challenger_main, opponent_main, challenger_hp)
+                        attacker = 1
+
+                    updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp)
                     await interaction.edit_original_response(embed=embed)
                     await asyncio.sleep(3)
+                await self.db.set_fluff_hp(challenger_main.fluff_user_id, challenger_hp)
+                await self.db.set_fluff_hp(opponent_main.fluff_user_id, opponent_hp)
+
+                if challenger_hp == 0: await interaction.edit_original_response(content=f"{self.opponent.display_name} has won the battle!", embed=None)
+                if opponent_hp == 0: await interaction.edit_original_response(content=f"{self.challenger.display_name} has won the battle!", embed=None)
 
 
 def setup(bot): # this is called by Pycord to setup the cog
     bot.add_cog(FluffBasic(bot)) # add the cog to the bot
+
+def challangerAttackingOpponent(challanger_main, opponent_main, oppponent_hp):
+    base_damage = challanger_main.attack - opponent_main.defense / 2
+    if base_damage < 1: base_damage = 1
+    if random.randint(1, 100) <= 5: base_damage *= 2
+    oppponent_hp -= base_damage
+    if oppponent_hp < 0: oppponent_hp = 0
+    return oppponent_hp
+
+def opponentAttackingChallanger(challanger_main, opponent_main, challanger_hp):
+    base_damage = opponent_main.attack - challanger_main.defense / 2
+    if base_damage < 1: base_damage = 1
+    if random.randint(1, 100) <= 5: base_damage *= 2
+    challanger_hp -= base_damage
+    if challanger_hp < 0: challanger_hp = 0
+    return challanger_hp
+
+def updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp):
+    embed.clear_fields()
+    embed.add_field(
+        name=f"{self.challenger.display_name}'s Fluff",
+        value=(
+            f"{challenger_main.name}\n"
+            f"Level: {challenger_main.level}\nHP: {challenger_hp}\n"
+        )
+    )
+    embed.add_field(
+        name=f"{self.opponent.display_name}'s Fluff",
+        value=(
+            f"{opponent_main.name}\n"
+            f"Level: {opponent_main.level}\nHP: {opponent_hp}\n"
+        )
+    )
