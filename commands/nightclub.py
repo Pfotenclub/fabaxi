@@ -65,14 +65,17 @@ class NightclubAgeVerification(discord.ui.Modal):
             await interaction.guild.get_channel(1283842433284837396).send(f"<@&1311047394074300498>\r\n{interaction.user.mention} has requested to join the Nightclub with an **underage** of {self.children[0].value} years...")
             return await interaction.respond("Only members 18 years old or older can get approved for the Nightclub!", ephemeral=True)
         
-        if interaction.user.get_role(1229064333993050123) is not None: # if the user has the <18 role send extra message to serverteam
+        elif interaction.user.get_role(1229064333993050123) is not None: # if the user has the <18 role send extra message to serverteam
             await interaction.guild.get_channel(1283842433284837396).send(f"<@&1311047394074300498>\r\n{interaction.user.mention} has requested to join the Nightclub **with the <18 Role** and an age of {self.children[0].value} years...")
             return await interaction.respond("You have the <18 Role...", ephemeral=True)
         
+        else:
+            await interaction.guild.get_channel(1283842433284837396).send(f"<@&1311047394074300498>\r\n{interaction.user.mention} has requested to join the Nightclub with an age of {self.children[0].value} years.")
+            await interaction.respond("Your request has been sent to the Nightclub staff for approval!", ephemeral=True)
+
         if int(self.children[0].value) == 69: await interaction.respond("69? Nice!", ephemeral=True)
         
-        await interaction.guild.get_channel(1283842433284837396).send(f"<@&1311047394074300498>\r\n{interaction.user.mention} has requested to join the Nightclub with an age of {self.children[0].value} years.")
-        await interaction.respond("Your request has been sent to the Nightclub staff for approval!", ephemeral=True)
+        
 
 
 
