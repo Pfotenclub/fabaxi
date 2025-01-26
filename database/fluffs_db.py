@@ -45,6 +45,18 @@ class FluffUserTable(Base):
     main = Column(Boolean, default=False)
     master_fluff_relation = relationship("MasterFluffTable", back_populates="fluff_user_relation")
 
+class TypeTable(Base):
+    __tablename__ = "types"
+    # Columns are Attacking and Rows are Defending
+    type_id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String)
+    Fire = Column(String, nullable=True)
+    Water = Column(String, nullable=True)
+    Grass = Column(String, nullable=True)
+    Normal = Column(String, nullable=True)
+    Electric = Column(String, nullable=True)
+    Ground = Column(String, nullable=True)
+
 
 class Database:
     def __init__(self, db_url="sqlite+aiosqlite:///./../data/fluffs.db"):
@@ -70,13 +82,6 @@ class Database:
             finally:
                 await session.close()
 
-    async def get_master_fluff_by_id(self, fluff_id):
-        async with self.get_session() as session:
-            result = await session.execute(
-                select(MasterFluffTable)
-                .where(MasterFluffTable.fluff_id == fluff_id)
-            )
-            return result.scalars().first()
     async def create_fluff_from_master(self, user_id, guild_id, fluff_id, main=False):
         async with self.get_session() as session:
             master_fluff = await self.get_master_fluff_by_id(fluff_id)
@@ -124,6 +129,14 @@ class Database:
             await session.commit()
             return fluff
 
+    async def get_master_fluff_by_id(self, fluff_id):
+        async with self.get_session() as session:
+            result = await session.execute(
+                select(MasterFluffTable)
+                .where(MasterFluffTable.fluff_id == fluff_id)
+            )
+            return result.scalars().first()
+    
     async def get_fluffs_by_user(self, user_id, guild_id):
         async with self.get_session() as session:
             result = await session.execute(
@@ -139,4 +152,23 @@ class Database:
                 .where(FluffUserTable.fluff_user_id == fluff_id)
             )
             return result.scalars().first()
-    
+
+    async def is_effective(self, attacking_type, defending_type):
+        async with self.get_session() as session:
+            result = await session.execute(
+                select(TypeTable)
+                .where(TypeTable.name == defending_type)
+            )
+            type_row = result.scalars().first()
+            if type_row is None:
+                return ""
+            return getattr(type_row, attacking_type)
+
+    async def set_fluff_hp(self, fluff_id, hp):
+        async with self.get_session() as session:
+            fluff = await self.get_fluff_by_id(fluff_id)
+            fluff.hp = hp
+            session.add(fluff)
+            await session.commit()
+            return fluff
+        
