@@ -215,6 +215,9 @@ class BattleAcceptButton(discord.ui.Button):
                 challenger_hp = challenger_main.hp
                 opponent_hp = opponent_main.hp
 
+                if challenger_hp == 0: return await interaction.respond(f"{self.challenger.display_name} doesn't have any HP left and can't battle!")
+                if opponent_hp == 0: return await interaction.respond(f"{self.opponent.display_name} doesn't have any HP left and can't battle!")
+
                 embed = discord.Embed(
                     title="Fluff Battle!",
                     description=f"{self.challenger.display_name} vs {self.opponent.display_name}",
@@ -245,8 +248,7 @@ class BattleAcceptButton(discord.ui.Button):
 
                 while challenger_hp > 0 and opponent_hp > 0:
                     if attacker == 1: 
-                        effective = self.db.is_effective()
-                        opponent_hp = challangerAttackingOpponent(challenger_main, opponent_main, opponent_hp)
+                        opponent_hp = await executeAttack(self=self, attacker=challenger_main, opponent=opponent_main, oppponent_hp=opponent_hp)
                         attacker = 2
                     updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp)
                     await interaction.edit_original_response(embed=embed)
@@ -255,7 +257,7 @@ class BattleAcceptButton(discord.ui.Button):
                     if opponent_hp == 0: break
 
                     if attacker == 2:
-                        challenger_hp = opponentAttackingChallanger(challenger_main, opponent_main, challenger_hp)
+                        challenger_hp = await executeAttack(self=self, attacker=opponent_main, opponent=challenger_main, oppponent_hp=challenger_hp)
                         attacker = 1
 
                     updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp)
@@ -271,21 +273,38 @@ class BattleAcceptButton(discord.ui.Button):
 def setup(bot): # this is called by Pycord to setup the cog
     bot.add_cog(FluffBasic(bot)) # add the cog to the bot
 
-def challangerAttackingOpponent(challanger_main, opponent_main, oppponent_hp):
-    base_damage = challanger_main.attack - opponent_main.defense / 2
+async def executeAttack(self, attacker, opponent, oppponent_hp):
+    base_damage = attacker.attack - opponent.defense / 2
+    # Checking for type effectiveness
+    if await self.db.is_effective(attacker.type1, opponent.type1) == "+": base_damage *= 2
+    elif await self.db.is_effective(attacker.type1, opponent.type1) == "-": base_damage /= 2
+    elif await self.db.is_effective(attacker.type1, opponent.type1) == "0": base_damage *= 0
+
+    if attacker.type2:
+        if await self.db.is_effective(attacker.type2, opponent.type1) == "+": base_damage *= 2
+        elif await self.db.is_effective(attacker.type2, opponent.type1) == "-": base_damage /= 2
+        elif await self.db.is_effective(attacker.type2, opponent.type1) == "0": base_damage *= 0
+
+    if opponent.type2:
+        if await self.db.is_effective(attacker.type1, opponent.type2) == "+": base_damage *= 2
+        elif await self.db.is_effective(attacker.type1, opponent.type2) == "-": base_damage /= 2
+        elif await self.db.is_effective(attacker.type1, opponent.type2) == "0": base_damage *= 0
+
+        if attacker.type2:
+            if await self.db.is_effective(attacker.type2, opponent.type2) == "+": base_damage *= 2
+            elif await self.db.is_effective(attacker.type2, opponent.type2) == "-": base_damage /= 2
+            elif await self.db.is_effective(attacker.type2, opponent.type2) == "0": base_damage *= 0
+
+        
+    
+
     if base_damage < 1: base_damage = 1
-    if random.randint(1, 100) <= 5: base_damage *= 2
+    if random.randint(1, 100) <= 5: base_damage *= 2 # Critical Hit
+    elif random.randint(1, 100) <= 3: base_damage = 0 # Miss
+    base_damage = int(base_damage)
     oppponent_hp -= base_damage
     if oppponent_hp < 0: oppponent_hp = 0
     return oppponent_hp
-
-def opponentAttackingChallanger(challanger_main, opponent_main, challanger_hp):
-    base_damage = opponent_main.attack - challanger_main.defense / 2
-    if base_damage < 1: base_damage = 1
-    if random.randint(1, 100) <= 5: base_damage *= 2
-    challanger_hp -= base_damage
-    if challanger_hp < 0: challanger_hp = 0
-    return challanger_hp
 
 def updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp):
     embed.clear_fields()
@@ -302,4 +321,9 @@ def updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp
             f"{opponent_main.name}\n"
             f"Level: {opponent_main.level}\nHP: {opponent_hp}\n"
         )
+    )
+    embed.add_field(
+        name="Battle Log",
+        value="",
+        inline=False
     )
