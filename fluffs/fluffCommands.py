@@ -236,6 +236,11 @@ class BattleAcceptButton(discord.ui.Button):
                 f"Level: {opponent_main.level}\nHP: {opponent_hp}\n"
             )
         )
+        embed.add_field(
+            name="Battle Log",
+            value="-",
+            inline=False
+        )
         embed.set_footer(text="The Battle will begin shortly!")
         await interaction.message.delete()
         await interaction.respond(embed=embed)
@@ -248,19 +253,19 @@ class BattleAcceptButton(discord.ui.Button):
 
         while challenger_hp > 0 and opponent_hp > 0:
             if attacker == 1: 
-                opponent_hp = await self.executeAttack(self=self, attacker=challenger_main, opponent=opponent_main, oppponent_hp=opponent_hp)
+                opponent_hp = await self.executeAttack(attacker=challenger_main, opponent=opponent_main, oppponent_hp=opponent_hp)
                 attacker = 2
-            self.updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp)
+            self.updateBattleEmbed(embed=embed, challenger_main=challenger_main, opponent_main=opponent_main, challenger_hp=challenger_hp, opponent_hp=opponent_hp)
             await interaction.edit_original_response(embed=embed)
             await asyncio.sleep(3)
 
             if opponent_hp == 0: break
 
             if attacker == 2:
-                challenger_hp = await self.executeAttack(self=self, attacker=opponent_main, opponent=challenger_main, oppponent_hp=challenger_hp)
+                challenger_hp = await self.executeAttack(attacker=opponent_main, opponent=challenger_main, oppponent_hp=challenger_hp)
                 attacker = 1
 
-            self.updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp)
+            self.updateBattleEmbed(embed=embed, challenger_main=challenger_main, opponent_main=opponent_main, challenger_hp=challenger_hp, opponent_hp=opponent_hp)
             await interaction.edit_original_response(embed=embed)
             await asyncio.sleep(3)
         await self.db.set_fluff_hp(challenger_main.fluff_user_id, challenger_hp)
@@ -270,26 +275,32 @@ class BattleAcceptButton(discord.ui.Button):
         if opponent_hp == 0: await interaction.edit_original_response(content=f"{self.challenger.display_name} has won the battle!", embed=None)
 
     async def executeAttack(self, attacker, opponent, oppponent_hp):
+        battle_log = None
         base_damage = attacker.attack - opponent.defense / 2
         # Checking for type effectiveness
         effectivenes = 1
         if await self.db.is_effective(attacker.type1, opponent.type1) == "+":
             base_damage *= 2
             effectivenes *= 2
-        elif await self.db.is_effective(attacker.type1, opponent.type1) == "-": base_damage /= 2
-        elif await self.db.is_effective(attacker.type1, opponent.type1) == "0": base_damage *= 0
+            battle_log = "It's super effective!"
+        elif await self.db.is_effective(attacker.type1, opponent.type1) == "-":
+            base_damage /= 2
+            effectivenes /= 2
+        elif await self.db.is_effective(attacker.type1, opponent.type1) == "0":
+            base_damage *= 0
+            effectivenes *= 0
 
-        if attacker.type2:
+        if attacker.type2 and effectivenes == 1:
             if await self.db.is_effective(attacker.type2, opponent.type1) == "+": base_damage *= 2
             elif await self.db.is_effective(attacker.type2, opponent.type1) == "-": base_damage /= 2
             elif await self.db.is_effective(attacker.type2, opponent.type1) == "0": base_damage *= 0
 
-        if opponent.type2:
+        if opponent.type2 and effectivenes == 1:
             if await self.db.is_effective(attacker.type1, opponent.type2) == "+": base_damage *= 2
             elif await self.db.is_effective(attacker.type1, opponent.type2) == "-": base_damage /= 2
             elif await self.db.is_effective(attacker.type1, opponent.type2) == "0": base_damage *= 0
 
-            if attacker.type2:
+            if attacker.type2 and effectivenes == 1:
                 if await self.db.is_effective(attacker.type2, opponent.type2) == "+": base_damage *= 2
                 elif await self.db.is_effective(attacker.type2, opponent.type2) == "-": base_damage /= 2
                 elif await self.db.is_effective(attacker.type2, opponent.type2) == "0": base_damage *= 0
@@ -302,7 +313,8 @@ class BattleAcceptButton(discord.ui.Button):
         if oppponent_hp < 0: oppponent_hp = 0
         return oppponent_hp
 
-    def updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp):
+    def updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp, battle_log):
+        fields = embed.fields
         embed.clear_fields()
         embed.add_field(
             name=f"{self.challenger.display_name}'s Fluff",
@@ -318,6 +330,8 @@ class BattleAcceptButton(discord.ui.Button):
                 f"Level: {opponent_main.level}\nHP: {opponent_hp}\n"
             )
         )
+        if embed.fields[2].value is "-":
+            print("No Battle Log")
         embed.add_field(
             name="Battle Log",
             value="",
