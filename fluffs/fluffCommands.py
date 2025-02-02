@@ -188,142 +188,142 @@ class SelectStarterFluffButton(discord.ui.Button):
 
 # Gives the opponent the option to accept or decline the battle challenge
 class BattleAcceptButton(discord.ui.Button):
-            def __init__(self, style, label, custom_id : int, challenger : discord.User, opponent : discord.User):
-                super().__init__(style=style, label=label, custom_id=str(custom_id))
-                self.challenger = challenger
-                self.opponent = opponent
-                self.db = Database()
+    def __init__(self, style, label, custom_id : int, challenger : discord.User, opponent : discord.User):
+        super().__init__(style=style, label=label, custom_id=str(custom_id))
+        self.challenger = challenger
+        self.opponent = opponent
+        self.db = Database()
 
-            async def callback(self, interaction: discord.Interaction):
-                if interaction.user.id != self.opponent.id: return await interaction.respond("You can't accept or decline a challenge that wasn't sent to you!", ephemeral=True)
-                if self.custom_id == "2": 
-                    await interaction.respond(f"{interaction.user.display_name} has declined the challenge!")
-                    return await interaction.message.delete()
+    async def callback(self, interaction: discord.Interaction):
+        if interaction.user.id != self.opponent.id: return await interaction.respond("You can't accept or decline a challenge that wasn't sent to you!", ephemeral=True)
+        if self.custom_id == "2": 
+            await interaction.respond(f"{interaction.user.display_name} has declined the challenge!")
+            return await interaction.message.delete()
 
-                challenger_fluffs = await self.db.get_fluffs_by_user(self.challenger.id, interaction.guild.id)
-                opponent_fluffs = await self.db.get_fluffs_by_user(self.opponent.id, interaction.guild.id)
-                challenger_main = None
-                opponent_main = None
-                for fluff in challenger_fluffs:
-                    if fluff.main:
-                        challenger_main = fluff
-                        break
-                for fluff in opponent_fluffs:
-                    if fluff.main:
-                        opponent_main = fluff
-                        break
-                challenger_hp = challenger_main.hp
-                opponent_hp = opponent_main.hp
+        challenger_fluffs = await self.db.get_fluffs_by_user(self.challenger.id, interaction.guild.id)
+        opponent_fluffs = await self.db.get_fluffs_by_user(self.opponent.id, interaction.guild.id)
+        challenger_main = None
+        opponent_main = None
+        for fluff in challenger_fluffs:
+            if fluff.main:
+                challenger_main = fluff
+                break
+        for fluff in opponent_fluffs:
+            if fluff.main:
+                opponent_main = fluff
+                break
+        challenger_hp = challenger_main.hp
+        opponent_hp = opponent_main.hp
 
-                if challenger_hp == 0: return await interaction.respond(f"{self.challenger.display_name} doesn't have any HP left and can't battle!")
-                if opponent_hp == 0: return await interaction.respond(f"{self.opponent.display_name} doesn't have any HP left and can't battle!")
+        if challenger_hp == 0: return await interaction.respond(f"{self.challenger.display_name} doesn't have any HP left and can't battle!")
+        if opponent_hp == 0: return await interaction.respond(f"{self.opponent.display_name} doesn't have any HP left and can't battle!")
 
-                embed = discord.Embed(
-                    title="Fluff Battle!",
-                    description=f"{self.challenger.display_name} vs {self.opponent.display_name}",
-                )
-                embed.add_field(
-                    name=f"{self.challenger.display_name}'s Fluff",
-                    value=(
-                        f"{challenger_main.name}\n"
-                        f"Level: {challenger_main.level}\nHP: {challenger_hp}\n"
-                    )
-                )
-                embed.add_field(
-                    name=f"{self.opponent.display_name}'s Fluff",
-                    value=(
-                        f"{opponent_main.name}\n"
-                        f"Level: {opponent_main.level}\nHP: {opponent_hp}\n"
-                    )
-                )
-                embed.set_footer(text="The Battle will begin shortly!")
-                await interaction.message.delete()
-                await interaction.respond(embed=embed)
-                embed.set_footer(text="The Battle has begun!")
-                
-                await asyncio.sleep(5)
+        embed = discord.Embed(
+            title="Fluff Battle!",
+            description=f"{self.challenger.display_name} vs {self.opponent.display_name}",
+        )
+        embed.add_field(
+            name=f"{self.challenger.display_name}'s Fluff",
+            value=(
+                f"{challenger_main.name}\n"
+                f"Level: {challenger_main.level}\nHP: {challenger_hp}\n"
+            )
+        )
+        embed.add_field(
+            name=f"{self.opponent.display_name}'s Fluff",
+            value=(
+                f"{opponent_main.name}\n"
+                f"Level: {opponent_main.level}\nHP: {opponent_hp}\n"
+            )
+        )
+        embed.set_footer(text="The Battle will begin shortly!")
+        await interaction.message.delete()
+        await interaction.respond(embed=embed)
+        embed.set_footer(text="The Battle has begun!")
+        
+        await asyncio.sleep(5)
 
+        attacker = 1
+        if opponent_main.speed > challenger_main.speed: attacker = 2
+
+        while challenger_hp > 0 and opponent_hp > 0:
+            if attacker == 1: 
+                opponent_hp = await self.executeAttack(self=self, attacker=challenger_main, opponent=opponent_main, oppponent_hp=opponent_hp)
+                attacker = 2
+            self.updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp)
+            await interaction.edit_original_response(embed=embed)
+            await asyncio.sleep(3)
+
+            if opponent_hp == 0: break
+
+            if attacker == 2:
+                challenger_hp = await self.executeAttack(self=self, attacker=opponent_main, opponent=challenger_main, oppponent_hp=challenger_hp)
                 attacker = 1
-                if opponent_main.speed > challenger_main.speed: attacker = 2
 
-                while challenger_hp > 0 and opponent_hp > 0:
-                    if attacker == 1: 
-                        opponent_hp = await executeAttack(self=self, attacker=challenger_main, opponent=opponent_main, oppponent_hp=opponent_hp)
-                        attacker = 2
-                    updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp)
-                    await interaction.edit_original_response(embed=embed)
-                    await asyncio.sleep(3)
+            self.updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp)
+            await interaction.edit_original_response(embed=embed)
+            await asyncio.sleep(3)
+        await self.db.set_fluff_hp(challenger_main.fluff_user_id, challenger_hp)
+        await self.db.set_fluff_hp(opponent_main.fluff_user_id, opponent_hp)
 
-                    if opponent_hp == 0: break
+        if challenger_hp == 0: await interaction.edit_original_response(content=f"{self.opponent.display_name} has won the battle!", embed=None)
+        if opponent_hp == 0: await interaction.edit_original_response(content=f"{self.challenger.display_name} has won the battle!", embed=None)
 
-                    if attacker == 2:
-                        challenger_hp = await executeAttack(self=self, attacker=opponent_main, opponent=challenger_main, oppponent_hp=challenger_hp)
-                        attacker = 1
+    async def executeAttack(self, attacker, opponent, oppponent_hp):
+        base_damage = attacker.attack - opponent.defense / 2
+        # Checking for type effectiveness
+        effectivenes = 1
+        if await self.db.is_effective(attacker.type1, opponent.type1) == "+":
+            base_damage *= 2
+            effectivenes *= 2
+        elif await self.db.is_effective(attacker.type1, opponent.type1) == "-": base_damage /= 2
+        elif await self.db.is_effective(attacker.type1, opponent.type1) == "0": base_damage *= 0
 
-                    updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp)
-                    await interaction.edit_original_response(embed=embed)
-                    await asyncio.sleep(3)
-                await self.db.set_fluff_hp(challenger_main.fluff_user_id, challenger_hp)
-                await self.db.set_fluff_hp(opponent_main.fluff_user_id, opponent_hp)
+        if attacker.type2:
+            if await self.db.is_effective(attacker.type2, opponent.type1) == "+": base_damage *= 2
+            elif await self.db.is_effective(attacker.type2, opponent.type1) == "-": base_damage /= 2
+            elif await self.db.is_effective(attacker.type2, opponent.type1) == "0": base_damage *= 0
 
-                if challenger_hp == 0: await interaction.edit_original_response(content=f"{self.opponent.display_name} has won the battle!", embed=None)
-                if opponent_hp == 0: await interaction.edit_original_response(content=f"{self.challenger.display_name} has won the battle!", embed=None)
+        if opponent.type2:
+            if await self.db.is_effective(attacker.type1, opponent.type2) == "+": base_damage *= 2
+            elif await self.db.is_effective(attacker.type1, opponent.type2) == "-": base_damage /= 2
+            elif await self.db.is_effective(attacker.type1, opponent.type2) == "0": base_damage *= 0
 
+            if attacker.type2:
+                if await self.db.is_effective(attacker.type2, opponent.type2) == "+": base_damage *= 2
+                elif await self.db.is_effective(attacker.type2, opponent.type2) == "-": base_damage /= 2
+                elif await self.db.is_effective(attacker.type2, opponent.type2) == "0": base_damage *= 0
+
+        if base_damage < 1: base_damage = 1
+        if random.randint(1, 100) <= 5: base_damage *= 2 # Critical Hit
+        elif random.randint(1, 100) <= 3: base_damage = 0 # Miss
+        base_damage = int(base_damage)
+        oppponent_hp -= base_damage
+        if oppponent_hp < 0: oppponent_hp = 0
+        return oppponent_hp
+
+    def updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp):
+        embed.clear_fields()
+        embed.add_field(
+            name=f"{self.challenger.display_name}'s Fluff",
+            value=(
+                f"{challenger_main.name}\n"
+                f"Level: {challenger_main.level}\nHP: {challenger_hp}\n"
+            )
+        )
+        embed.add_field(
+            name=f"{self.opponent.display_name}'s Fluff",
+            value=(
+                f"{opponent_main.name}\n"
+                f"Level: {opponent_main.level}\nHP: {opponent_hp}\n"
+            )
+        )
+        embed.add_field(
+            name="Battle Log",
+            value="",
+            inline=False
+        )
 
 def setup(bot): # this is called by Pycord to setup the cog
     bot.add_cog(FluffBasic(bot)) # add the cog to the bot
 
-async def executeAttack(self, attacker, opponent, oppponent_hp):
-    base_damage = attacker.attack - opponent.defense / 2
-    # Checking for type effectiveness
-    if await self.db.is_effective(attacker.type1, opponent.type1) == "+": base_damage *= 2
-    elif await self.db.is_effective(attacker.type1, opponent.type1) == "-": base_damage /= 2
-    elif await self.db.is_effective(attacker.type1, opponent.type1) == "0": base_damage *= 0
-
-    if attacker.type2:
-        if await self.db.is_effective(attacker.type2, opponent.type1) == "+": base_damage *= 2
-        elif await self.db.is_effective(attacker.type2, opponent.type1) == "-": base_damage /= 2
-        elif await self.db.is_effective(attacker.type2, opponent.type1) == "0": base_damage *= 0
-
-    if opponent.type2:
-        if await self.db.is_effective(attacker.type1, opponent.type2) == "+": base_damage *= 2
-        elif await self.db.is_effective(attacker.type1, opponent.type2) == "-": base_damage /= 2
-        elif await self.db.is_effective(attacker.type1, opponent.type2) == "0": base_damage *= 0
-
-        if attacker.type2:
-            if await self.db.is_effective(attacker.type2, opponent.type2) == "+": base_damage *= 2
-            elif await self.db.is_effective(attacker.type2, opponent.type2) == "-": base_damage /= 2
-            elif await self.db.is_effective(attacker.type2, opponent.type2) == "0": base_damage *= 0
-
-        
-    
-
-    if base_damage < 1: base_damage = 1
-    if random.randint(1, 100) <= 5: base_damage *= 2 # Critical Hit
-    elif random.randint(1, 100) <= 3: base_damage = 0 # Miss
-    base_damage = int(base_damage)
-    oppponent_hp -= base_damage
-    if oppponent_hp < 0: oppponent_hp = 0
-    return oppponent_hp
-
-def updateBattleEmbed(self, embed, challenger_main, opponent_main, challenger_hp, opponent_hp):
-    embed.clear_fields()
-    embed.add_field(
-        name=f"{self.challenger.display_name}'s Fluff",
-        value=(
-            f"{challenger_main.name}\n"
-            f"Level: {challenger_main.level}\nHP: {challenger_hp}\n"
-        )
-    )
-    embed.add_field(
-        name=f"{self.opponent.display_name}'s Fluff",
-        value=(
-            f"{opponent_main.name}\n"
-            f"Level: {opponent_main.level}\nHP: {opponent_hp}\n"
-        )
-    )
-    embed.add_field(
-        name="Battle Log",
-        value="",
-        inline=False
-    )
