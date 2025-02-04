@@ -24,10 +24,10 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
     async def counting(self, ctx):
         countChannel = None
         if environment == "DEV":
-            countChannel == self.bot.get_channel(1335743804346470411)
+            countChannel = 1335743804346470411
         elif environment == "PROD":
-            countChannel == self.bot.get_channel(1335743804346470411) # TODO: Change this to the correct channel ID
-        if ctx.channel is not countChannel:
+            countChannel = 1335743804346470411 # TODO: Change this to the correct channel ID
+        if ctx.channel_id != countChannel:
             await ctx.respond("You can only start counting in the counting channel!", ephemeral=True)
             return
         countJson = None
@@ -35,7 +35,11 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             countJson = json.load(file)
         
         if countJson["status"] == "stopped":
-            print("Counting is stopped.")
+            countJson["status"] = "starting"
+            countJson["count"] = 0
+            with open(os.path.join("./../data", "count.json"), "w") as file:
+                json.dump(countJson, file)
+            await ctx.respond("Counting is starting soon. Please wait.")
         elif countJson["status"] == "running":
             await ctx.respond(f"The current count is {countJson['count']}.")
         elif countJson["status"] == "starting":
@@ -48,7 +52,7 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             countChannel == self.bot.get_channel(1335743804346470411)
         elif environment == "PROD":
             countChannel == self.bot.get_channel(1335743804346470411) # TODO: Change this to the correct channel ID
-        if message.channel is not countChannel: return
+        if message.channel != countChannel: return
 
         countJson = None
         with open(os.path.join("./../data", "count.json"), "r") as file:
@@ -56,7 +60,7 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
         
         if countJson["status"] == "stopped": return
         elif countJson["status"] == "starting":
-            if message.content is not "1":
+            if message.content != "1":
                 await message.channel.send("Dang! You didn't start at 1. Type 1 to start counting.")
             countJson["status"] = "running"
             countJson["count"] = 1
