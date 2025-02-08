@@ -45,13 +45,12 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
         elif countJson["status"] == "starting":
             await ctx.respond("Counting is starting soon. Please wait.")
 
-    @discord.Cog.listener()
-    async def on_message(self, message):
+    @discord.Cog.listener("on_message")
+    async def countingGame(self, message):
+        if message.author.bot: return
         countChannel = None
-        if environment == "DEV":
-            countChannel == self.bot.get_channel(1335743804346470411)
-        elif environment == "PROD":
-            countChannel == self.bot.get_channel(1335743804346470411) # TODO: Change this to the correct channel ID
+        if environment == "DEV": countChannel = self.bot.get_channel(1335743804346470411)
+        elif environment == "PROD": countChannel = self.bot.get_channel(1337733289695514725)
         if message.channel != countChannel: return
 
         countJson = None
@@ -60,11 +59,35 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
         
         if countJson["status"] == "stopped": return
         elif countJson["status"] == "starting":
-            if message.content != "1":
-                await message.channel.send("Dang! You didn't start at 1. Type 1 to start counting.")
+            if message.content != "1": return await message.channel.send("Dang! You didn't start at 1. Type 1 to start counting.")
             countJson["status"] = "running"
             countJson["count"] = 1
             countJson["lastAuthor"] = message.author.id
+            with open(os.path.join("./../data", "count.json"), "w") as file:
+                json.dump(countJson, file)
+        elif countJson["status"] == "running":
+            if message.content.isnumeric() == False: 
+                await message.channel.send("Hmpf, That's not a number! You can only count with numbers!\nWe will start over at 1.")
+                countJson["count"] = 0
+                countJson["lastAuthor"] = message.author.id
+                countJson["status"] = "starting"#
+
+            elif message.author.id == countJson["lastAuthor"]:
+                await message.channel.send(f"{message.author.mention}, you can't count twice in a row!\nWe will start over at 1.")
+                countJson["count"] = 0
+                countJson["lastAuthor"] = message.author.id
+                countJson["status"] = "starting"
+                
+            elif int(message.content) != countJson["count"] + 1:
+                await message.channel.send(f"{message.author.mention}, you typed the wrong number! Your count should be {countJson['count'] + 1}.\nWe will start over at 1.")
+                countJson["count"] = 0
+                countJson["lastAuthor"] = message.author.id
+                countJson["status"] = "starting"
+
+            else:
+                countJson["count"] += 1
+                countJson["lastAuthor"] = message.author.id
+
             with open(os.path.join("./../data", "count.json"), "w") as file:
                 json.dump(countJson, file)
 
