@@ -92,6 +92,7 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             else:
                 countJson["count"] += 1
                 countJson["lastAuthor"] = message.author.id
+                message.add_reaction("✅")
 
             with open(os.path.join(data_path, "count.json"), "w") as file:
                 json.dump(countJson, file)
