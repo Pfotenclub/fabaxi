@@ -6,7 +6,7 @@ from database.karma_db import Database, KarmaTable, RewardsTable
 import logging
 
 class Karma(commands.Cog):
-    logging.basicConfig(level=logging.WARN,
+    logging.basicConfig(level=logging.ERROR,
                     format='%(asctime)s %(message)s',
                     handlers=[logging.StreamHandler()])
 
