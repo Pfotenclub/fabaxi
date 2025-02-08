@@ -62,6 +62,7 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             countJson = json.load(file)
         
         if countJson["status"] == "stopped": return
+        if message.content.startswith("!"): return
         elif countJson["status"] == "starting":
             if message.content != "1": return await message.channel.send("Dang! You didn't start at 1. Type 1 to start counting.")
             countJson["status"] = "running"
