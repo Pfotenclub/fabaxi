@@ -35,13 +35,13 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             await ctx.respond("You can only start counting in the counting channel!", ephemeral=True)
             return
         countJson = None
-        with open(os.path.join("data_path", "count.json"), "r") as file:
+        with open(os.path.join(data_path, "count.json"), "r") as file:
             countJson = json.load(file)
         
         if countJson["status"] == "stopped":
             countJson["status"] = "starting"
             countJson["count"] = 0
-            with open(os.path.join("data_path", "count.json"), "w") as file:
+            with open(os.path.join(data_path, "count.json"), "w") as file:
                 json.dump(countJson, file)
             await ctx.respond("Counting is starting soon. Please wait.")
         elif countJson["status"] == "running":
@@ -58,7 +58,7 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
         if message.channel != countChannel: return
 
         countJson = None
-        with open(os.path.join("data_path", "count.json"), "r") as file:
+        with open(os.path.join(data_path, "count.json"), "r") as file:
             countJson = json.load(file)
         
         if countJson["status"] == "stopped": return
@@ -68,7 +68,7 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             countJson["status"] = "running"
             countJson["count"] = 1
             countJson["lastAuthor"] = message.author.id
-            with open(os.path.join("data_path", "count.json"), "w") as file:
+            with open(os.path.join(data_path, "count.json"), "w") as file:
                 json.dump(countJson, file)
         elif countJson["status"] == "running":
             if message.content.isnumeric() == False: 
@@ -93,7 +93,7 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
                 countJson["count"] += 1
                 countJson["lastAuthor"] = message.author.id
 
-            with open(os.path.join("data_path", "count.json"), "w") as file:
+            with open(os.path.join(data_path, "count.json"), "w") as file:
                 json.dump(countJson, file)
 
 
