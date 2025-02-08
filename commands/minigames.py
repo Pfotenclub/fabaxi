@@ -26,7 +26,7 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
         if environment == "DEV":
             countChannel = 1335743804346470411
         elif environment == "PROD":
-            countChannel = 1335743804346470411 # TODO: Change this to the correct channel ID
+            countChannel = 1337733289695514725
         if ctx.channel_id != countChannel:
             await ctx.respond("You can only start counting in the counting channel!", ephemeral=True)
             return
