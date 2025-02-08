@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, Integer, BigInteger, insert, select, delete
 
 Base = declarative_base()
-logging.basicConfig(level=logging.WARN,
+logging.basicConfig(level=logging.ERROR,
                     format='%(asctime)s %(message)s',
                     handlers=[logging.StreamHandler()])
 
