@@ -11,7 +11,7 @@ class Utils(commands.Cog): # create a class for our cog that inherits from comma
     @discord.Cog.listener("on_raw_reaction_add")
     async def chooseRoleColor(self, payload):
         if payload.member.bot: return
-        if payload.message_id != 1341847683375042581: return
+        if payload.message_id != 1341869799726383175: return
         rolecolors = {
                 1341767688384675861: "🍏",
                 1341767941586423930: "🍎",
