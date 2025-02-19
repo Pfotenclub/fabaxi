@@ -22,9 +22,9 @@ class AdminCommands(commands.Cog): # create a class for our cog that inherits fr
         
         elif message.content == "!role-colors":
             rolecolors = {
-                1341767688384675861: "🍏",
-                1341767941586423930: "🍎",
-                1341767847730221117: "🍐",
+                1234037731987034183: "🍏",
+                1137680433614696469: "🍎",
+                1233662864590635042: "🍐",
                 1341768071030898688: "🍊",
                 1341768035932835861: "🍋",
                 1341766810286161940: "🍋‍🟩",
@@ -35,14 +35,16 @@ class AdminCommands(commands.Cog): # create a class for our cog that inherits fr
                 1341766994432622653: "🫐",
                 1341768250564022384: "🍈",
                 1341768940640272488: "🍒",
-            }
+                0: "❌"
+        }
             embedText = ""
             for role in rolecolors:
+                if role == 0: continue
                 embedText += f"{rolecolors[role]} - <@&{role}>\n"
             embed = discord.Embed(title="Role colors", description=embedText)
             embed.color = discord.Color.blue()
-            embed.set_footer(text=f"React to change your role color!")
-            msg = await message.channel.send(embed=embed)
+            embed.set_footer(text=f"To remove your color, react with ❌")
+            msg = await message.channel.send(content="React to change your role color!", embed=embed)
             for role in rolecolors:
                 await msg.add_reaction(rolecolors[role])
             
