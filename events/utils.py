@@ -11,11 +11,11 @@ class Utils(commands.Cog): # create a class for our cog that inherits from comma
     @discord.Cog.listener("on_raw_reaction_add")
     async def chooseRoleColor(self, payload):
         if payload.member.bot: return
-        if payload.message_id != 1341869799726383175: return
+        if payload.message_id != 1341874136795971726: return
         rolecolors = {
-                1341767688384675861: "🍏",
-                1341767941586423930: "🍎",
-                1341767847730221117: "🍐",
+                1234037731987034183: "🍏",
+                1137680433614696469: "🍎",
+                1233662864590635042: "🍐",
                 1341768071030898688: "🍊",
                 1341768035932835861: "🍋",
                 1341766810286161940: "🍋‍🟩",
@@ -26,8 +26,18 @@ class Utils(commands.Cog): # create a class for our cog that inherits from comma
                 1341766994432622653: "🫐",
                 1341768250564022384: "🍈",
                 1341768940640272488: "🍒",
-            }
-        
+                0: "❌"
+        }
+
+        if str(payload.emoji) == "❌":
+            for role in rolecolors:
+                if payload.member.guild.get_role(role) in payload.member.roles:
+                    await payload.member.remove_roles(payload.member.guild.get_role(role))
+            msg = self.bot.get_channel(payload.channel_id).get_partial_message(payload.message_id)
+            await msg.remove_reaction(payload.emoji, payload.member)
+            await payload.member.send("Removed your role color")
+            return
+
         for role in rolecolors:
             if payload.member.guild.get_role(role) in payload.member.roles:
                 await payload.member.remove_roles(payload.member.guild.get_role(role))
