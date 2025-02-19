@@ -72,12 +72,15 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             if message.content.lower() not in word_list:
                 await message.channel.send("That's not a word! Please type a valid word.")
                 return
+
             for word in morphingJson["usedWords"]:
                 if message.content.lower() == word.lower():
-                    await message.channel.send(f"{message.author.mention}, this word has already been used!")
-                    morphingJson["lastAuthor"] = message.author.id
-                    with open(os.path.join(data_path, "morphing.json"), "w") as file: json.dump(morphingJson, file)
-                    return
+                    index = morphingJson["usedWords"].index(word)
+                    if index >= len(morphingJson["usedWords"]) - 20:
+                        await message.channel.send(f"{message.author.mention}, this word has already been used within the last 20 times!")
+                        morphingJson["lastAuthor"] = message.author.id
+                        with open(os.path.join(data_path, "morphing.json"), "w") as file: json.dump(morphingJson, file)
+                        return
         
             if isOneCharacterDifferent(morphingJson["usedWords"][-1].lower(), message.content.lower()) == False: return await message.channel.send(f"{message.author.mention}, your word must be one character different from the last word!")
 
