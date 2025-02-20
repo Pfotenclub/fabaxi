@@ -175,7 +175,7 @@ class Karma(commands.Cog):
         await self.db.remove_reward(role.id, ctx.guild.id)
         await ctx.respond(f"Removed {role.name} from the reward roles.")
 
-    @discord.slash_command(name="rewards")
+    @discord.slash_command(name="rewards", guild_only=True)
     async def list_rewards(self, ctx):
         """List all reward roles for karma."""
         async with self.db.get_session() as session:
