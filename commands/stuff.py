@@ -7,7 +7,7 @@ class Stuff(commands.Cog): # create a class for our cog that inherits from comma
 
     def __init__(self, bot): # this is a special method that is called when the cog is loaded
         self.bot = bot
-    @discord.slash_command(name="ping", description="Pong!", guild_only=True)
+    @discord.slash_command(name="ping", description="Pong!", contexts={discord.InteractionContextType.guild})
     async def pull(self, ctx):
         await ctx.respond("Pong!")
 

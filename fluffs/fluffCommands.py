@@ -19,8 +19,8 @@ class FluffBasic(commands.Cog): # create a class for our cog that inherits from 
         self.db = Database() # create an instance of the database class from fluffs_db.py
         self.bot.loop.create_task(self.db.init_db()) # create a task to initialize the database
 
-    fluffCommandGroup = discord.SlashCommandGroup(name="fluffs", description="Fluff Commands") # create a group of slash commands
-    @fluffCommandGroup.command(name="intro", description="Introduction to the Fluffs Feature and select your starter Fluff")
+    fluffCommandGroup = discord.SlashCommandGroup(name="fluffs", description="Fluff Commands", contexts={discord.InteractionContextType.guild}) # create a group of slash commands
+    @fluffCommandGroup.command(name="intro", description="Introduction to the Fluffs Feature and select your starter Fluff", contexts={discord.InteractionContextType.guild})
     async def intro(self, ctx):
         await ctx.defer()
 
@@ -45,7 +45,7 @@ class FluffBasic(commands.Cog): # create a class for our cog that inherits from 
         embed.set_footer(text="Click the button below to get your starter Fluff!")
         await ctx.respond(embed=embed, view=view)
 
-    @fluffCommandGroup.command(name="my-fluffs", description="View all the Fluffs you own")
+    @fluffCommandGroup.command(name="my-fluffs", description="View all the Fluffs you own", contexts={discord.InteractionContextType.guild})
     async def fluffs(self, ctx):
         await ctx.defer()
 
@@ -62,7 +62,7 @@ class FluffBasic(commands.Cog): # create a class for our cog that inherits from 
                 embed.add_field(name=f"{fluff.name}", value=f"Level: {fluff.level}\nHP: {fluff.hp}\nID: {fluff.fluff_user_id}")
         await ctx.respond(embed=embed)
     
-    @fluffCommandGroup.command(name="battle", description="Challenge another player to a Fluff battle")
+    @fluffCommandGroup.command(name="battle", description="Challenge another player to a Fluff battle", contexts={discord.InteractionContextType.guild})
     async def battle(self, ctx, user: discord.Member):
         # Check if user has any Fluffs
         challenger_fluffs = await self.db.get_fluffs_by_user(ctx.author.id, ctx.guild.id)

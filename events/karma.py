@@ -116,7 +116,7 @@ class Karma(commands.Cog):
             is_addition=False
         )
 
-    @discord.slash_command(name="adjustkarma", guild_only=True)
+    @discord.slash_command(name="adjustkarma", contexts={discord.InteractionContextType.guild})
     @discord.ext.commands.has_guild_permissions(administrator=True)
     async def give_karma(self, ctx, member: discord.Member, amount: int):
         """Adjusts karma of a specified user by provided amount."""
@@ -128,7 +128,7 @@ class Karma(commands.Cog):
         await self.db.adjust_karma_for_user(member.id, ctx.guild.id, amount)
         await ctx.respond(f"Gave {amount} karma to {member.mention}!")
 
-    @discord.slash_command(name="leaderboard", guild_only=True)
+    @discord.slash_command(name="leaderboard", contexts={discord.InteractionContextType.guild})
     async def leaderboard(self, ctx):
         """Displays the leaderboard for the server."""
         await ctx.defer()
@@ -145,21 +145,21 @@ class Karma(commands.Cog):
 
         await ctx.respond(embed=embed)
 
-    @discord.slash_command(name="clearleaderboard", guild_only=True)
+    @discord.slash_command(name="clearleaderboard", contexts={discord.InteractionContextType.guild})
     @discord.ext.commands.has_guild_permissions(administrator=True)
     async def clear_leaderboard(self, ctx):
         """Clears the leaderboard for the server."""
         await self.db.clear_karma_leaderboard(ctx.guild.id)
         await ctx.respond("Leaderboard has been cleared!")
 
-    @discord.slash_command(name="karma", guild_only=True)
+    @discord.slash_command(name="karma", contexts={discord.InteractionContextType.guild})
     async def check_karma(self, ctx, member: discord.Member = None):
         """Check karma for a user."""
         member = member or ctx.author
         karma = await self.db.get_user_karma(member.id, ctx.guild.id)
         await ctx.respond(f"{member.display_name} has {karma or 0} karma.")
 
-    @discord.slash_command(name="add_reward", guild_only=True)
+    @discord.slash_command(name="add_reward", contexts={discord.InteractionContextType.guild})
     @discord.ext.commands.has_guild_permissions(manage_roles=True)
     async def add_reward(self, ctx, role: discord.Role, karma_needed: int):
         """Add a reward role for karma."""
@@ -168,14 +168,14 @@ class Karma(commands.Cog):
             await session.commit()
         await ctx.respond(f"Added {role.name} as a reward for {karma_needed} karma.")
 
-    @discord.slash_command(name="remove_reward", guild_only=True)
+    @discord.slash_command(name="remove_reward", contexts={discord.InteractionContextType.guild})
     @discord.ext.commands.has_guild_permissions(manage_roles=True)
     async def remove_reward(self, ctx, role: discord.Role):
         """Remove a reward role for karma."""
         await self.db.remove_reward(role.id, ctx.guild.id)
         await ctx.respond(f"Removed {role.name} from the reward roles.")
 
-    @discord.slash_command(name="rewards", guild_only=True)
+    @discord.slash_command(name="rewards", contexts={discord.InteractionContextType.guild})
     async def list_rewards(self, ctx):
         """List all reward roles for karma."""
         async with self.db.get_session() as session:
