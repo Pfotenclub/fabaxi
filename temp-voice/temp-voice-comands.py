@@ -121,6 +121,7 @@ class LimitChannel(discord.ui.Modal): # Modal for setting the user limit
             
             if not self.children[0].value: # if the value is empty
                 channel = getTempChannelFromMember(interaction.user) # get the channel
+                self.children[0].value = "5" # set the value to 5 
                 await channel.edit(user_limit=5) # set the limit to 5
             elif self.children[0].value.isnumeric(): # if the value is a number
                 channel = getTempChannelFromMember(interaction.user) # get the channel

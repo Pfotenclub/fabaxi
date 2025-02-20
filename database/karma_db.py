@@ -29,7 +29,6 @@ class Database:
     def __init__(self, db_url="sqlite+aiosqlite:///./../data/karma.db"):
         if os.environ.get("DOCKER") is None:
             self.engine = create_async_engine(db_url, future=True, echo=False)
-            # self.engine = create_async_engine(db_url, future=True, echo=True)
         else:
             self.engine = create_async_engine("sqlite+aiosqlite:////db/karma.db", future=True, echo=False)
             #self.engine = create_async_engine("sqlite+aiosqlite:////db/karma.db", future=True, echo=True)

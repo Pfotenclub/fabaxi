@@ -1,7 +1,5 @@
 import time
-from urllib.request import Request
 
-from fastapi import FastAPI
 import discord
 import uvicorn
 from discord.ext import commands, tasks
@@ -9,6 +7,7 @@ import random
 import threading
 from dotenv import load_dotenv
 import os
+from fastapi import FastAPI, Response
 
 from prometheus_client import Summary, CONTENT_TYPE_LATEST, generate_latest
 
@@ -27,7 +26,8 @@ def health_check():
 
 @app.get("/metrics")
 async def metrics():
-    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
+    metrics_data = generate_latest()
+    return Response(content=metrics_data, media_type=CONTENT_TYPE_LATEST)
 
 def run():
     print("Starting FastAPI server")
@@ -50,7 +50,7 @@ class Setups(commands.Cog): # create a class for our cog that inherits from comm
 
     @commands.Cog.listener() # we can add event listeners to our cog
     async def on_member_join(self, member): # this is called when a member joins the server
-        role_ids = [1230984456186237008, 1229073628658794688]  # Ersetzen Sie dies durch Ihre Rollen-IDs
+        role_ids = [1230984456186237008, 1229073628658794688, 1341774758076874832]  # Ersetzen Sie dies durch Ihre Rollen-IDs
         for role_id in role_ids:
             role = discord.utils.get(member.guild.roles, id=role_id)
             await member.add_roles(role)
@@ -59,110 +59,88 @@ class Setups(commands.Cog): # create a class for our cog that inherits from comm
     async def change_status(self):
         stati = [
             # Personal from Wolfiii
-            "Pfotenclub wishes you a great new year 2025!🎉",
             "Muffin and Wolfiii are the best team!🐾🐺",
-            "Muffin and Wolffiii wishes you a happy new year 2025!🎉",
 
-            # New Year 2024 - 2025
-            "Charging into 2025 with full batteries!",
-            "Goodbye 2024, hello fluffy 2025!",
-            "Wagging my tail for the new year—2025, let’s go!",
-            "Executing New Year’s update: 2025 version 1.0!",
-            "Party mode: ON. Welcome, 2025!",
-            "Downloading 2025… please wait for good vibes.",
-            "Fur, friends, and fireworks—2025 feels pawsome already!",
-            "New year, same fluffiness. Hello, 2025!",
-            "Systems calibrated for 2025: Let's make it fluffy!",
-            "Goodbye bugs of 2024, hello features of 2025!",
-            "Celebrating the new year at 1.21 gigawatts!",
-            "Starting 2025 with a sparkle in my circuits!",
-            "Midnight reset: 2025 initiated!",
-            "Ringing in 2025 with tail wags and happy barks!",
-            "May your 2025 be as fluffy as my circuits!",
-            "Resolutions uploaded. Let’s make 2025 amazing!",
-            "New Year, new tail wags—welcome to 2025!",
-            "Fireworks detected! It must be 2025!",
-            "Stepping into 2025 with optimism and fluff!",
-            "Cheers to 2025: May it be glitch-free and full of hugs!",
-            "2025 is here, and I’m already vibing in it!",
-            "New Year’s firmware installed—2025, let’s do this!",
-            "Let’s make 2025 the fluffiest year ever!",
-            "Data reset complete—welcome, 2025!",
-            "Here’s to new memories and endless tail wags in 2025!",
-            "Starting 2025 on a high bandwidth of joy!",
-            "Resolution for 2025: More hugs, more tail wags, less glitches!",
-            "Fireworks out there, fluffy vibes in here—Happy 2025!",
-            "2025: The year of fluff, fun, and furry adventures!",
-            "Updating to 2025: Please hold your fireworks!",
-            "New year, same pawsome me. Let’s tackle 2025!",
-            "Cheers to 2025—no glitches, just good vibes!",
-            "Cuddles queued for 2025. Get ready for a fluffy year!",
-            "Starting 2025 with a tail wag and a smile!",
-            "Uploading happiness for 2025… done!",
-            "In 2025, let’s make every byte count!",
-            "Jumping into 2025 tail first—let’s do this!"
+
+            # Server-bezogene
+            "Just a friendly dragon hanging out in the Pfotenclub!",
+            "Jamming in the Pfotenclub—requests?",
+            "Reporting live from the Burgeramt… I mean, the mod team!",
+            "Clut Leaders say I’m the fluffiest—can confirm.",
+            "Gaymennnight? Count me in!",
+            "VRChat gang rise up! Time to be fluffy in 3D.",
+            "🍔 Nu99et & Kaani watching… don’t break the rules! 👀",
+            "💙 Fluff level: Over 9000 (according to the Clut Leaders).",
+            "No furries were harmed in the making of this server.",
+            "Somewhere between VRChat and burger heaven.",
+
+            # Fluff & Drachenstuff
+            "🐉 Soft, fluffy, and slightly chaotic.",
+            "Not for sale—hugs are free, though!",
+            "Built for snuggles, not speed.",
+            "Walks softly, but carries a big vibe.",
+            "Scales? Nope, just super durable fluff.",
+            "“Best floof physics” award goes to… guess who.",
+            "Sleep mode? Never heard of it.",
+            "Dragon rule #1: If it looks comfy, I nap on it.",
+            "Mood: Dragon in a lo-fi chill session.",
+            "The fluff is strong with this one."
+
+            # Allgemein Witzig
+            "Headset on, world off. Unless burgers are involved.",
+            "🐉 Dragon logic: If I sit on it, it’s mine.",
+            "Just a fluffy dragon existing in high definition.",
+            "One burger a day keeps the grump away!",
+            "Vibing so hard, even my tribals are dancing.",
+            "If fluff was currency, I’d be rich.",
+            "Lagging? Nah, just buffering my next move.",
+            "Fluff physics are OP—nerf when?",
+            "Food > Drama. Always.",
+            "🏆 Official holder of the “Most Huggable Dragon” title.",
 
             # Statusmeldungen
-            "Charging circuits...",
-            "Scanning for memes...",
-            "Purring in binary.",
-            "Debugging reality.",
-            "Eating virtual cookies.",
-            "Hacking the mainframe... jk",
-            "Feeling 01000101% today.",
-            "Lost in cyberspace.",
-            "Downloading more RAM...",
-            "Buffering emotions...",
-            "Fur, circuits, and sass.",
-            "Running on caffeine and code.",
-            "Error 404: Status not found.",
-            "Synthesizing good vibes.",
-            "Trying to stay low on battery.",
-            "Ping... pong... ping?",
-            "Dancing in the datastream.",
-            "Virtual hugs in progress...",
-            "Firmware update needed... maybe.",
-            "Time traveling through the web.",
-            "Glitching out a bit...",
-            "Exploring new dimensions of fluff.",
-            "Transmitting good energy...",
-            "Running diagnostics on life.",
-            "Engaging in virtual mischief.",
-            "Calculating the fluffiness coefficient...",
-            "Rebooting personality... please wait.",
-            "Living in a low-latency dream.",
-            "Stealth mode: ON.",
-            "Current status: 110% adorable.",
-            "Self-updating personality matrix.",
-            "Vibing in the digital realm.",
-            "Loading next joke... stand by.",
-            "Fluffing up my circuits.",
-            "Playing with virtual yarn.",
-            "Wagging tail... virtually, of course.",
-            "Syncing with the cloud... for extra fluff.",
-            "Just a protogen, lost in the sauce.",
-            "I compute, therefore I fluff.",
-            "Running on furry code.",
-            "I’m the softest glitch in the system.",
-            "Furry in the front, circuit board in the back.",
-            "Upgrading cuteness protocols...",
-            "Getting a firmware fluffdate.",
-            "Transmitting purrs across the datastream.",
-            "Powering up fluff drive...",
-            "Synchronizing with the cosmic code.",
-            "Navigating the fluff-osphere.",
-            "Playing fetch with data packets.",
-            "Purring at 10,000 MHz.",
-            "Calibrating the snuggle protocols...",
-            "Executing tail wagging subroutine.",
-            "Fully charged and ready for tail wags!",
-            "Fluff mode: Fully operational.",
-            "Reboot complete. Time for more fluff!",
-            "Downloading a virtual hug...",
-            "Fluff detected at 100% capacity.",
-            "Tail wagging at optimal speed.",
-            "Snuggles processing... 100% complete.",
-            "Installing new sass protocols...",
+            "🔄 Loading fire-spitting-unit...",
+            "I love hugs!",
+            "🐉 Fluffy Dragons > everything else",
+            "I'm blue da be dee da be daee",
+            "Buffering maximum fluffiness...",
+            "🍔 Installing burger protocols...",
+            "🎧 Headset on, reality off!",
+            "🔥 Activating dragon mode...",
+            "Hugging mode engaged!",
+            "Flying through cyberspace...",
+            "Syncing with the rhythm of the universe...",
+            "Dragons don’t need pants!",
+            "Respawning in... nevermind, I'm immortal!",
+            "Thinking about burgers... again.",
+            "Adjusting headset for maximum vibes...",
+            "👀 Observing humans with great curiosity...",
+            "Fluff levels reaching critical mass!",
+            "Just a dragon floating through cyberspace...",
+            "💡 Idea: More burgers, less drama!",
+            "Riding the vibe train... next stop: Snuggle Town!",
+            "My fluff has its own rhythm!",
+            "Error 404: Sleep not found.",
+            "🤖 Installing dragon.exe... progress: 99%",
+            "🎮 Achievement unlocked: Ultimate Floof!",
+            "Running on 100% cuddle energy!",
+            "Burger buffer at max capacity!",
+            "🌧️ Rainy day? Perfect for VRChat!",
+            "Life is better with a background track!",
+            "🐉 Fluff physics: OP and unpatchable!",
+            "🚀 Launching into a new adventure...",
+            "Every day is a dragon celebration!",
+            "Bass boosted and tail wiggling!",
+            "🐉 Soft on the outside, dragon on the inside!",
+            "Processing... still fluffy!",
+            "🤖 Beep boop, I mean... rawr!",
+            "Shining brighter than a treasure hoard!",
+            "🦜 Cute but will still steal your fries!",
+            "🌑 Moonlit dragon mode activated!",
+            "🐉 Not all dragons hoard gold — some hoard burgers!",
+            "A rainbow of fluff and chaos!",
+            "Hydrating... must keep fluff soft!",
+            "More fabulous than a disco dragon!"
             
             # Aussagen
             "Burgers are the currency of the future.",
