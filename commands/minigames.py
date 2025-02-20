@@ -22,76 +22,7 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
         
         
     
-    minigamesCommandGroup = discord.SlashCommandGroup(name="minigames", description="A selection of minigames to play with your friends.")
-    @minigamesCommandGroup.command(name="wordmorphing", description="Morph your Words.")
-    async def wordmorphing(self, ctx):
-        
-        morphingChannel = None
-        if environment == "DEV": morphingChannel = 1337753714294784113
-        elif environment == "PROD": morphingChannel = 1337751857518477363
-        if ctx.channel_id != morphingChannel: return await ctx.respond("You can only start word morphing in the word morphing channel!", ephemeral=True)
-
-        morphingJson = None
-        with open(os.path.join(data_path, "morphing.json"), "r") as file: morphingJson = json.load(file)
-
-        if morphingJson["status"] == "stopped":
-            morphingJson["status"] = "starting"
-            morphingJson["word"] = []
-            with open(os.path.join(data_path, "morphing.json"), "w") as file: json.dump(morphingJson, file)
-            await ctx.respond("Word Morphing is starting soon. Please wait.")
-        elif morphingJson["status"] == "running": await ctx.respond(f"With this command you can restart the game. Not implemented yet :)")
-        elif morphingJson["status"] == "starting": await ctx.respond("Word Morphing is starting soon. Please wait.")
-
-    @discord.Cog.listener("on_message")
-    async def morphingGame(self, message):
-        if message.author.bot: return
-        morphingChannel = None
-        if environment == "DEV": morphingChannel = self.bot.get_channel(1337753714294784113)
-        elif environment == "PROD": morphingChannel = self.bot.get_channel(1337751857518477363)
-        if message.channel != morphingChannel: return
-
-        morphingJson = None
-        with open(os.path.join(data_path, "morphing.json"), "r") as file: morphingJson = json.load(file)
-        word_list = words.words()
-
-        if morphingJson["status"] == "stopped": return
-        if message.content.startswith("!"): return
-
-        if morphingJson["status"] == "starting":
-            if message.content.lower() not in word_list:
-                await message.channel.send("That's not a word! Please type a valid word to start the game.")
-                return
-            morphingJson["status"] = "running"
-            morphingJson["usedWords"].append(message.content)
-            morphingJson["lastAuthor"] = message.author.id
-            await message.add_reaction("✅")
-            with open(os.path.join(data_path, "morphing.json"), "w") as file: json.dump(morphingJson, file)
-        elif morphingJson["status"] == "running":
-            if message.author.id == morphingJson["lastAuthor"]: 
-                return await message.channel.send(f"{message.author.mention}, you can't type two words in a row!")
-            if message.content.lower() not in word_list:
-                await message.channel.send("That's not a word! Please type a valid word.")
-                return
-
-            for word in morphingJson["usedWords"]:
-                if message.content.lower() == word.lower():
-                    index = morphingJson["usedWords"].index(word)
-                    if index >= len(morphingJson["usedWords"]) - 20:
-                        await message.channel.send(f"{message.author.mention}, this word has already been used within the last 20 times!")
-                        morphingJson["lastAuthor"] = message.author.id
-                        with open(os.path.join(data_path, "morphing.json"), "w") as file: json.dump(morphingJson, file)
-                        return
-        
-            if isOneCharacterDifferent(morphingJson["usedWords"][-1].lower(), message.content.lower()) == False: return await message.channel.send(f"{message.author.mention}, your word must be one character different from the last word!")
-
-            morphingJson["usedWords"].append(message.content)
-            morphingJson["lastAuthor"] = message.author.id
-            with open(os.path.join(data_path, "morphing.json"), "w") as file: json.dump(morphingJson, file)
-            await message.add_reaction("✅")
-
-            
-            
-    
+    minigamesCommandGroup = discord.SlashCommandGroup(name="minigames", description="A selection of minigames to play with your friends.")    
     @minigamesCommandGroup.command(name="counting", description="Count up!")
     async def counting(self, ctx):
         countChannel = None
@@ -164,20 +95,3 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
 
 def setup(bot): # this is called by Pycord to setup the cog
     bot.add_cog(Minigames(bot)) # add the cog to the bot
-
-def isOneCharacterDifferent(word1, word2):
-    # One character difference
-    if len(word1) == len(word2):
-        differences = sum(1 for a,b in zip(word1, word2) if a != b)
-        return differences == 1
-    # One character added
-    elif len(word1) + 1 == len(word2):
-        for i in range(len(word2)):
-            if word1 == word2[:i] + word2[i+1:]:
-                return True
-    # One character removed
-    elif len(word1) == len(word2) + 1:
-        for i in range(len(word1)):
-            if word2 == word1[:i] + word1[i+1:]:
-                return True
-    return False
