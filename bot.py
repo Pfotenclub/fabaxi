@@ -82,4 +82,17 @@ if __name__ == '__main__':
 
                 logging.error(f"{i} was loaded correctly") # print that the file was loaded
 
+    if os.path.isdir("./../fluffs"):
+        os.chdir("./../fluffs")
+    else:
+        os.chdir("./../app/fluffs")
+    for i in os.listdir():
+        if i.endswith(".py"):
+            try:
+                bot.load_extension(f"fluffs.{i[:-3]}")
+            except Exception as error:
+                logging.error(f'{i} could not be loaded. [{error}]')
+            else:
+                logging.error(f"{i} was loaded correctly")
+
 bot.run(TOKEN) # run the bot with the token

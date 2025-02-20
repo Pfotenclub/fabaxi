@@ -31,6 +31,7 @@ class Database:
             self.engine = create_async_engine(db_url, future=True, echo=False)
         else:
             self.engine = create_async_engine("sqlite+aiosqlite:////db/karma.db", future=True, echo=False)
+            #self.engine = create_async_engine("sqlite+aiosqlite:////db/karma.db", future=True, echo=True)
         self.SessionLocal = sessionmaker(bind=self.engine, class_=AsyncSession, expire_on_commit=False)
 
     async def init_db(self):
