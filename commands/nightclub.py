@@ -20,7 +20,7 @@ class Nightclub(commands.Cog): # create a class for our cog that inherits from c
 
     def __init__(self, bot): # this is a special method that is called when the cog is loaded
         self.bot = bot
-    @commands.slash_command(name="nightclub", description="Enter the nightclub")
+    @commands.slash_command(name="nightclub", description="Enter the nightclub", , guild_only=True)
     async def nightclub(self, ctx):
         if ctx.author.id != 327880195476422656:
             return await ctx.respond("This command is not available for you!", ephemeral=True)
