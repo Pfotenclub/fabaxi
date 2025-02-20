@@ -22,8 +22,8 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
         
         
     
-    minigamesCommandGroup = discord.SlashCommandGroup(name="minigames", description="A selection of minigames to play with your friends.")    
-    @minigamesCommandGroup.command(name="counting", description="Count up!")
+    minigamesCommandGroup = discord.SlashCommandGroup(name="minigames", description="A selection of minigames to play with your friends.", guild_only=True)
+    @minigamesCommandGroup.command(name="counting", description="Count up!", guild_only=True)
     async def counting(self, ctx):
         countChannel = None
         if environment == "DEV": countChannel = 1335743804346470411

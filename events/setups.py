@@ -50,7 +50,7 @@ class Setups(commands.Cog): # create a class for our cog that inherits from comm
 
     @commands.Cog.listener() # we can add event listeners to our cog
     async def on_member_join(self, member): # this is called when a member joins the server
-        role_ids = [1230984456186237008, 1229073628658794688]  # Ersetzen Sie dies durch Ihre Rollen-IDs
+        role_ids = [1230984456186237008, 1229073628658794688, 1341774758076874832]  # Ersetzen Sie dies durch Ihre Rollen-IDs
         for role_id in role_ids:
             role = discord.utils.get(member.guild.roles, id=role_id)
             await member.add_roles(role)
