@@ -18,7 +18,7 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
         
         
     
-    minigamesCommandGroup = discord.SlashCommandGroup(name="minigames", description="A selection of minigames to play with your friends.")
+    minigamesCommandGroup = discord.SlashCommandGroup(name="minigames", description="A selection of minigames to play with your friends.", guild_only=True)
     # @minigamesCommandGroup.command(name="wordmorphing", description="Morph your Words.", guild_only=True)
     # async def wordmorphing(self, ctx):
         
