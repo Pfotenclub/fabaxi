@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
                 logging.error(f"{i} was loaded correctly") # print that the file was loaded
 
-    if os.path.isdir("./../fluffs"):
+    """if os.path.isdir("./../fluffs"):
         os.chdir("./../fluffs")
     else:
         os.chdir("./../app/fluffs")
@@ -93,6 +93,6 @@ if __name__ == '__main__':
             except Exception as error:
                 logging.error(f'{i} could not be loaded. [{error}]')
             else:
-                logging.error(f"{i} was loaded correctly")
+                logging.error(f"{i} was loaded correctly")"""
 
 bot.run(TOKEN) # run the bot with the token

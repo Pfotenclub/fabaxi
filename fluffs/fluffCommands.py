@@ -330,7 +330,7 @@ class BattleAcceptButton(discord.ui.Button):
                 f"Level: {opponent_main.level}\nHP: {opponent_hp}\n"
             )
         )
-        if embed.fields[2].value is "-":
+        if embed.fields[2].value == "-":
             print("No Battle Log")
         embed.add_field(
             name="Battle Log",
