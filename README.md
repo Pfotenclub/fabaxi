@@ -1,2 +1,0 @@
-# chatgpaint
-ChatGPainT
