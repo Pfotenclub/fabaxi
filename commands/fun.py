@@ -94,5 +94,21 @@ class Fun(commands.Cog): # create a class for our cog that inherits from command
         embed.color = discord.Color.blue()
         await ctx.respond(embed=embed)
 
+    @discord.slash_command(name="hug", description="Hug someone!", contexts={discord.InteractionContextType.guild})
+    @discord.option("user", description="User you want to hug", type=discord.SlashCommandOptionType.user, required=True)
+    async def hug(self, ctx: discord.ApplicationContext, user: discord.User):
+        if ctx.author.id == user.id: return await ctx.respond(f"{ctx.author.mention} hugs themselves. Aww, don't worry, you're not alone! :people_hugging:")
+        if random.randint(1, 100) <= 10: return await ctx.respond(f"{ctx.author.mention} tried to hug {user.mention}, but they got rejected! Ouch! :cry:")
+        elif random.randint(1, 100) <= 10: return await ctx.respond(f"{ctx.author.mention} hugged {user.mention} to death! :skull:")
+        else: return await ctx.respond(f"{ctx.author.mention} hugs {user.mention}! :hugging:")
+    
+    @discord.slash_command(name="pat", description="Pat someone!", contexts={discord.InteractionContextType.guild})
+    @discord.option("user", description="User you want to pat", type=discord.SlashCommandOptionType.user, required=True)
+    async def pat(self, ctx: discord.ApplicationContext, user: discord.User):
+        if ctx.author.id == user.id: return await ctx.respond(f"{ctx.author.mention} pats themselves. Aww, don't worry, you're not alone! :people_hugging:")
+        if random.randint(1, 100) <= 10: return await ctx.respond(f"{ctx.author.mention} tried to pat {user.mention}, but they got rejected! Ouch! :cry:")
+        elif random.randint(1, 100) <= 10: return await ctx.respond(f"{ctx.author.mention} patted {user.mention} to death! :skull:")
+        else: return await ctx.respond(f"{ctx.author.mention} pats {user.mention}!")
+
 def setup(bot): # this is called by Pycord to setup the cog
     bot.add_cog(Fun(bot)) # add the cog to the bot
