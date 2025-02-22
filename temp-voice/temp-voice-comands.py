@@ -110,6 +110,7 @@ class RenameChannel(discord.ui.Modal): # Modal for renaming the channel
                     await interaction.response.send_message("You can only rename the channel twice every 10 minutes.", ephemeral=True) # send a rate limit message
                 else:
                     raise e # raise the error if it is not a rate limit error
+
 class LimitChannel(discord.ui.Modal): # Modal for setting the user limit
     def __init__(self, *args, **kwargs) -> None: # when the modal is created
         super().__init__( # create the modal
