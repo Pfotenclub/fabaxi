@@ -81,7 +81,7 @@ def setup(bot): # this is called by Pycord to setup the cog
 
 async def createTempVoice(bot, joinToCreateParent, member):
     category = bot.get_channel(joinToCreateParent) # get the category
-    channel = await category.create_voice_channel(f"{member.display_name}'s Channel", user_limit=5) # create the channel with 5 slots
+    channel = await category.create_voice_channel(f"{member.display_name}'s Channel", user_limit=10) # create the channel with 5 slots
     pickle.dump((channel.id, member.id), open(f"temp-voice-ids/{channel.id}.pkl", "wb")) # save the channel id and member id to a file
     await member.move_to(channel) # move the member to the channel
     return channel

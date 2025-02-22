@@ -93,18 +93,23 @@ class RenameChannel(discord.ui.Modal): # Modal for renaming the channel
 
         channel = getTempChannelFromMember(interaction.user) # get the channel
         if channel is not None: # if the channel exists
-            if self.children[0].value: # if the value is not empty
-                await channel.edit(name=self.children[0].value) # set the name to the value
-            else: 
-                await channel.edit(name=f"{interaction.user.display_name}'s Channel") # set the name to the default name
+            try:
+                if self.children[0].value: # if the value is not empty
+                    await channel.edit(name=self.children[0].value) # set the name to the value
+                else: 
+                    await channel.edit(name=f"{interaction.user.display_name}'s Channel") # set the name to the default name
 
-        embed = discord.Embed( # create an embed
-            title="Update successful!", # set the title
-            description=f"Your channel is now named {channel.name}!", # set the description
-        color=discord.Color.embed_background(), # set the color
-        )
-        await interaction.response.send_message(embeds=[embed], ephemeral=True) # send the embed
-        
+                embed = discord.Embed( # create an embed
+                title="Update successful!", # set the title
+                description=f"Your channel is now named {channel.name}!", # set the description
+                color=discord.Color.embed_background(), # set the color
+                )
+                await interaction.response.send_message(embeds=[embed], ephemeral=True) # send the embed
+            except discord.HTTPException as e:
+                if e.status == 429: # if the error is a rate limit error
+                    await interaction.response.send_message("You can only rename the channel twice every 10 minutes.", ephemeral=True) # send a rate limit message
+                else:
+                    raise e # raise the error if it is not a rate limit error
 class LimitChannel(discord.ui.Modal): # Modal for setting the user limit
     def __init__(self, *args, **kwargs) -> None: # when the modal is created
         super().__init__( # create the modal
@@ -121,8 +126,8 @@ class LimitChannel(discord.ui.Modal): # Modal for setting the user limit
             
             if not self.children[0].value: # if the value is empty
                 channel = getTempChannelFromMember(interaction.user) # get the channel
-                self.children[0].value = "5" # set the value to 5 
-                await channel.edit(user_limit=5) # set the limit to 5
+                self.children[0].value = "10" # set the value to 10 
+                await channel.edit(user_limit=10) # set the limit to 10
             elif self.children[0].value.isnumeric(): # if the value is a number
                 channel = getTempChannelFromMember(interaction.user) # get the channel
                 await channel.edit(user_limit=int(self.children[0].value)) # set the limit to the value
