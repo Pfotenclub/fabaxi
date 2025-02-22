@@ -62,10 +62,6 @@ class Stuff(commands.Cog): # create a class for our cog that inherits from comma
     async def before_check_birthdays(self):
         await self.bot.wait_until_ready()
                     
-    @discord.slash_command(name="ping", description="Pong!", contexts={discord.InteractionContextType.guild})
-    async def pull(self, ctx):
-        await ctx.respond("Pong!")
-
     birthdayCommandGroup = discord.SlashCommandGroup(name="birthday", description="A selection of birthday commands.", contexts={discord.InteractionContextType.guild})
     @birthdayCommandGroup.command(name="set", description="Set your birthday.", contexts={discord.InteractionContextType.guild})
     @discord.option(name="day", description="The day of your birthday.", type=discord.SlashCommandOptionType.integer, required=True)
@@ -90,6 +86,7 @@ class Stuff(commands.Cog): # create a class for our cog that inherits from comma
         except Exception as e:
             await ctx.respond("An error occurred. Please try again later.", ephemeral=True)
             print(e)
+  
     @birthdayCommandGroup.command(name="delete", description="Delete your birthday.", contexts={discord.InteractionContextType.guild})
     async def deleteBirthday(self, ctx):
         try:
@@ -99,7 +96,29 @@ class Stuff(commands.Cog): # create a class for our cog that inherits from comma
             await ctx.respond("An error occurred. Please try again later.", ephemeral=True)
             print(e)
 
-    
+    @birthdayCommandGroup.command(name="view", description="View your birthday.", contexts={discord.InteractionContextType.guild})
+    @discord.option(name="user", description="The user whose birthday you want to view.", type=discord.SlashCommandOptionType.user, required=False)
+    async def viewBirthday(self, ctx: discord.InteractionContextType, user: discord.User = None):
+        birthday: date = None
+        embed = discord.Embed()
+        embed.color = discord.Color.blue()
+        if user is None:
+            user = ctx.author
+        embed.title = f"{user.global_name}'s Birthday"
+        embed.set_thumbnail(url=user.avatar.url)
+        try:
+            user_record = await self.db.get_user_record(user.id, ctx.guild.id)
+            if user_record is None:
+                embed.description = "No birthday set."
+            else:
+                if user_record.year == 1900:
+                    embed.description = f"{user_record.day}.{user_record.month}."
+                else:
+                    embed.description = f"{user_record.day}.{user_record.month}.{user_record.year}"
+        except Exception as e:
+            embed.description = "An error occurred. Please try again later."
+            print(e)
+        await ctx.respond(embed=embed)
 
 def setup(bot): # this is called by Pycord to setup the cog
     bot.add_cog(Stuff(bot)) # add the cog to the bot
