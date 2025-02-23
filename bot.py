@@ -5,7 +5,6 @@ from discord.ext import commands
 import discord
 import os # default module
 from dotenv import load_dotenv
-from prometheus_client import Histogram
 
 load_dotenv() # load all the variables from the env file
 environment = os.getenv('ENVIRONMENT') # get the environment variable
@@ -22,24 +21,9 @@ logging.basicConfig(level=logging.WARN,
                     format='%(asctime)s %(message)s',
                     handlers=[logging.StreamHandler()])
 
-COMMAND_LATENCY = Histogram(
-    "discord_command_latency_seconds",
-    "Latency of Discord bot commands in seconds",
-    ["command_name"]
-)
-
 @bot.event
 async def on_ready():
     logging.info(f"{bot.user} is ready and online!")
-
-@bot.event
-async def on_command(ctx):
-    logging.debug("i fucking hate my life")
-    command_name = ctx.command.name
-    start_time = time.time()
-    await bot.invoke(ctx)
-    latency = time.time() - start_time
-    COMMAND_LATENCY.labels(command_name=command_name).observe(latency)
 
 
 if __name__ == '__main__':
