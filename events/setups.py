@@ -1,42 +1,11 @@
 import time
-
 import discord
-import uvicorn
 from discord.ext import commands, tasks
 import random
 import threading
 from dotenv import load_dotenv
 import os
-from fastapi import FastAPI, Response
-
-from prometheus_client import Summary, CONTENT_TYPE_LATEST, generate_latest
-
 load_dotenv()
-
-app = FastAPI()
-REQUEST_LATENCY = Summary('request_latency_seconds', 'Request Latency')
-
-@app.post('/chatgpaint-ping')
-def ping():
-    return "OK", 200
-
-@app.get('/chatgpaint_health_check')
-def health_check():
-    return {"Status": "Ok","Code": 200, "Time": time.time()}
-
-@app.get("/metrics")
-async def metrics():
-    metrics_data = generate_latest()
-    return Response(content=metrics_data, media_type=CONTENT_TYPE_LATEST)
-
-def run():
-    print("Starting FastAPI server")
-    uvicorn.run(
-        "events.setups:app",
-        host="0.0.0.0",
-        port=int(os.getenv("STATUS_UPDATE_PORT", 8000)),
-        log_level="info",
-    )
 
 class Setups(commands.Cog): # create a class for our cog that inherits from commands.Cog
     # this class is used to create a cog, which is a module that can be added to the bot
@@ -266,10 +235,6 @@ class Setups(commands.Cog): # create a class for our cog that inherits from comm
     @change_status.before_loop
     async def before_change_status(self):
         await self.bot.wait_until_ready()
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        threading.Thread(target=run).start()
         
 def setup(bot): # this is called by Pycord to setup the cog
     bot.add_cog(Setups(bot)) # add the cog to the bot
