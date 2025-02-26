@@ -27,8 +27,14 @@ class Karma(commands.Cog):
                     await self.db.create_user_record_in_karma(member.id, guild.id)
 
     @discord.Cog.listener()
-    async def on_message(self, message):
-        if message.author.bot:
+    async def on_message(self, message: discord.Message):
+        if (
+            message.author.bot or 
+            message.channel.id == 1229062537954332782 or # commands channel
+            message.channel.id == 1337733289695514725 or # counting channel
+            message.channel.id == 1339010562964586647 or # cult leader channel
+            message.channel.id == 1283842433284837396 # burgeramt channel
+        ): 
             return
 
         await self.db.handle_message_karma(
