@@ -61,14 +61,15 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             countJson["status"] = "running"
             countJson["count"] = 1
             countJson["lastAuthor"] = message.author.id
-            await message.add_reaction("✅")
             with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
+            await message.add_reaction("✅")
         elif countJson["status"] == "running":
             if message.content.isnumeric() == False: 
                 await message.channel.send("Hmpf, That's not a number! You can only count with numbers!\nWe will start over at 1.")
                 countJson["count"] = 0
                 countJson["lastAuthor"] = message.author.id
                 countJson["status"] = "starting"
+                with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
                 await message.add_reaction("❌")
 
             elif message.author.id == countJson["lastAuthor"]:
@@ -76,6 +77,7 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
                 countJson["count"] = 0
                 countJson["lastAuthor"] = message.author.id
                 countJson["status"] = "starting"
+                with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
                 await message.add_reaction("❌")
                 
             elif int(message.content) != countJson["count"] + 1:
@@ -83,14 +85,14 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
                 countJson["count"] = 0
                 countJson["lastAuthor"] = message.author.id
                 countJson["status"] = "starting"
+                with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
                 await message.add_reaction("❌")
 
             else:
                 countJson["count"] += 1
                 countJson["lastAuthor"] = message.author.id
+                with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
                 await message.add_reaction("✅")
-
-            with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
 
 
 def setup(bot): # this is called by Pycord to setup the cog
