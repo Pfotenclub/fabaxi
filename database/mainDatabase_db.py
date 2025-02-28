@@ -21,11 +21,9 @@ class BirthdayTable(Base):
     year = Column(Integer, nullable=True)
 
 class Database:
-    def __init__(self, db_url="sqlite+aiosqlite:///./../data/main.db"):
-        if os.environ.get("DOCKER") is None:
-            self.engine = create_async_engine(db_url, future=True, echo=False)
-        else:
-            self.engine = create_async_engine("sqlite+aiosqlite:////db/main.db", future=True, echo=False)
+    def __init__(self):
+        db_url = f"mysql+aiomysql://{os.getenv('DB_USER')}:{os.getenv('DB_PW')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+        self.engine = create_async_engine(db_url, future=True, echo=False)
         self.SessionLocal = sessionmaker(bind=self.engine, class_=AsyncSession, expire_on_commit=False)
 
     async def init_db(self):

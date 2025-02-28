@@ -47,4 +47,9 @@ jobs:
           docker run -d \
             -e PROD_TOKEN=${{ secrets.PROD_TOKEN }} \
             -e ENVIRONMENT=${{ secrets.ENVIRONMENT }} \
-            -p ${{ secrets.STATUS_UPDATE_PORT }}:${{ secrets.STATUS_UPDATE_PORT }} --name ${{ secrets.DOCKER_IMAGE_NAME }} -v /home/chatgpaint/db:/db ${{ secrets.DOCKER_IMAGE_NAME }}
+            -e DB_HOST=${{ secrets.DB_HOST }} \
+            -e DB_PORT=${{ secrets.DB_PORT }} \
+            -e DB_USER=${{ secrets.DB_USER }} \
+            -e DB_PW=${{ secrets.DB_PW }} \
+            -e DB_NAME=${{ secrets.DB_NAME }} \
+            --name ${{ secrets.DOCKER_IMAGE_NAME }} ${{ secrets.DOCKER_IMAGE_NAME }}

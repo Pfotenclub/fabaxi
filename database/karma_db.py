@@ -1,5 +1,7 @@
 import logging
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from contextlib import asynccontextmanager
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -26,12 +28,11 @@ class RewardsTable(Base):
     karma_needed = Column(Integer, nullable=False)
 
 class Database:
-    def __init__(self, db_url="sqlite+aiosqlite:///./../data/karma.db"):
-        if os.environ.get("DOCKER") is None:
-            self.engine = create_async_engine(db_url, future=True, echo=False)
-        else:
-            self.engine = create_async_engine("sqlite+aiosqlite:////db/karma.db", future=True, echo=False)
-            #self.engine = create_async_engine("sqlite+aiosqlite:////db/karma.db", future=True, echo=True)
+
+    def __init__(self):
+        #db_url = "mysql+aiomysql://fabaxi:hyOzLSH5yBLBVhilKsppvHwpBjJEKPJvGeIwkP06kbS8YUVkKogcxWfZdwJUL7zU@37.27.1.107:57716/karma"
+        db_url = f"mysql+aiomysql://{os.getenv('DB_USER')}:{os.getenv('DB_PW')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+        self.engine = create_async_engine(db_url, future=True, echo=False)
         self.SessionLocal = sessionmaker(bind=self.engine, class_=AsyncSession, expire_on_commit=False)
 
     async def init_db(self):
