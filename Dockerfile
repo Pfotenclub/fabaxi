@@ -14,4 +14,4 @@ ENV STATUS_UPDATE_PORT=7958
 VOLUME ["/db"]
 EXPOSE 7958
 
-ENTRYPOINT ["python", "bot.py"]
+ENTRYPOINT ["python", "fabaxi.py"]
