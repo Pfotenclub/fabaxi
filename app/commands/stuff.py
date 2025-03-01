@@ -16,7 +16,7 @@ class Stuff(commands.Cog): # create a class for our cog that inherits from comma
     @tasks.loop(hours=24)
     async def check_birthdays(self):
         now = datetime.now()
-        target_time = time(17, 15)
+        target_time = time(17, 18)
         target_datetime = datetime.combine(now.date(), target_time)
 
         if now > target_datetime:
@@ -30,8 +30,8 @@ class Stuff(commands.Cog): # create a class for our cog that inherits from comma
             guild: discord.Guild = self.bot.get_guild(user.guild_id)
             member = guild.get_member(user.user_id)
             if member:
-                amaunzment = guild.get_channel_or_thread(1325889130478964859)
-                birthdayRole = guild.get_role(1234037731987034183)
+                amaunzment = guild.get_channel_or_thread(1191397658514956308)
+                birthdayRole = guild.get_role(1342827586648150076)
                 try:
                     if user.year == 1900:
                         await amaunzment.send(f"Happy Birthday, <@{member.id}>! :birthday: ")
