@@ -2,7 +2,7 @@ from discord.ext import commands, tasks
 import discord
 from sqlalchemy import select
 
-from app.database.karma_db import Database, RewardsTable
+from app.db.karma_db import Database, RewardsTable
 import logging
 
 class Karma(commands.Cog):

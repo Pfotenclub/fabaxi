@@ -1,24 +1,35 @@
 import logging
 import os
-from dotenv import load_dotenv
-load_dotenv()
 from contextlib import asynccontextmanager
+from time import time
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from dotenv import load_dotenv
 from sqlalchemy import Column, Integer, BigInteger, insert, select, delete
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, scoped_session
 
+load_dotenv()
 Base = declarative_base()
-logging.basicConfig(level=logging.ERROR,
-                    format='%(asctime)s %(message)s',
-                    handlers=[logging.StreamHandler()])
+logging.basicConfig(level=logging.ERROR, format='%(asctime)s %(message)s', handlers=[logging.StreamHandler()])
+
 
 class KarmaTable(Base):
-    __tablename__ = "karma"
+    __tablename__ = 'karma'
     user_id = Column(BigInteger, primary_key=True)
     guild_id = Column(BigInteger, primary_key=True)
     karma = Column(Integer, default=0)
-    timestamp_last_message = Column(Integer, default=0)
+    timestamp_last_message = Column(Integer, default=0, )
+
+    def __init__(self, user_id, guild_id, karma, timestamp_last_message=time()):
+        super().__init__()
+        self.user_id = user_id
+        self.guild_id = guild_id
+        self.karma = karma
+        self.timestamp_last_message = timestamp_last_message
+
+    def dump(self):
+        return dict([(k, v) for k, v in vars(self).items() if not k.startswith('_')])
 
 
 class RewardsTable(Base):
@@ -27,16 +38,26 @@ class RewardsTable(Base):
     guild_id = Column(BigInteger, primary_key=True)
     karma_needed = Column(Integer, nullable=False)
 
+    def __init__(self, role_id, guild_id, karma_needed):
+        super().__init__()
+        self.role_id = role_id
+        self.guild_id = guild_id
+        self.karma_needed = karma_needed
+
+    def dump(self):
+        return dict([(k, v) for k, v in vars(self).items() if not k.startswith('_')])
+
+
 class Database:
 
     def __init__(self):
-        #db_url = "mysql+aiomysql://fabaxi:hyOzLSH5yBLBVhilKsppvHwpBjJEKPJvGeIwkP06kbS8YUVkKogcxWfZdwJUL7zU@37.27.1.107:57716/karma"
-        db_url = f"mysql+aiomysql://{os.getenv('DB_USER')}:{os.getenv('DB_PW')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
-        self.engine = create_async_engine(db_url, future=True, echo=False)
-        self.SessionLocal = sessionmaker(bind=self.engine, class_=AsyncSession, expire_on_commit=False)
+        db_url = f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PW')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+        self.engine = create_async_engine(db_url, pool_recycle=3600, pool_pre_ping=True, pool_use_lifo=True)
+        self.SessionLocal = scoped_session(
+            sessionmaker(engine=self.engine, class_=AsyncSession, expire_on_commit=False))
 
     async def init_db(self):
-        """Create all tables in the database."""
+        """Create all tables in the db."""
         async with self.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
@@ -49,27 +70,19 @@ class Database:
             finally:
                 await session.close()
 
-
-
+    #############################################################################################################
     async def create_user_record_in_karma(self, user_id, guild_id):
         async with self.get_session() as session:
             existing_record = await session.execute(
-                select(KarmaTable)
-                .where(KarmaTable.user_id == user_id, KarmaTable.guild_id == guild_id)
-            )
+                select(KarmaTable).where(KarmaTable.user_id == user_id, KarmaTable.guild_id == guild_id))
             if existing_record.scalars().first():
                 logging.error(f"User record already exists for user_id={user_id}, guild_id={guild_id}")
                 return
 
-            insert_stmt = insert(KarmaTable).values(
-                user_id=user_id,
-                guild_id=guild_id,
-                karma=0
-            )
+            insert_stmt = insert(KarmaTable).values(user_id=user_id, guild_id=guild_id, karma=0)
             await session.execute(insert_stmt)
             await session.commit()
             logging.info(f"Created new karma record for user_id={user_id}, guild_id={guild_id}")
-
 
     async def adjust_karma_for_user(self, user_id, guild_id, amount: int):
         async with self.get_session() as session:
@@ -83,14 +96,11 @@ class Database:
 
             await session.commit()
 
-    async def get_karma_leaderboard(self, guild_id, limit:int=10):
+    async def get_karma_leaderboard(self, guild_id, limit: int = 10):
         async with self.get_session() as session:
             result = await session.execute(
-                select(KarmaTable)
-                .where(KarmaTable.guild_id == guild_id)
-                .order_by(KarmaTable.karma.desc())
-                .limit(limit)
-            )
+                select(KarmaTable).where(KarmaTable.guild_id == guild_id).order_by(KarmaTable.karma.desc()).limit(
+                    limit))
             return result.scalars().all()
 
     async def clear_karma_leaderboard(self, guild_id):
@@ -107,16 +117,6 @@ class Database:
                 await self.create_user_record_in_karma(user_id, guild_id)
                 return 0
 
-    async def adjust_karma_for_user(self, user_id, guild_id, amount: int):
-        async with self.get_session() as session:
-            record = await session.get(KarmaTable, {"user_id": user_id, "guild_id": guild_id})
-            if record:
-                record.karma += amount
-            else:
-                record = KarmaTable(user_id=user_id, guild_id=guild_id, karma=amount)
-                session.add(record)
-            await session.commit()
-
     async def add_reward(self, role_id, guild_id, karma_needed: int):
         async with self.get_session() as session:
             reward = RewardsTable(role_id=role_id, guild_id=guild_id, karma_needed=karma_needed)
@@ -132,9 +132,7 @@ class Database:
 
     async def list_rewards(self, guild_id):
         async with self.get_session() as session:
-            result = await session.execute(
-                select(RewardsTable).where(RewardsTable.guild_id == guild_id)
-            )
+            result = await session.execute(select(RewardsTable).where(RewardsTable.guild_id == guild_id))
             return result.scalars().all()
 
     async def handle_message_karma(self, user_id: int, guild_id: int, timestamp: float):
@@ -146,12 +144,8 @@ class Database:
                     karma_entry.karma += 1
                     karma_entry.timestamp_last_message = timestamp
             else:
-                karma_entry = KarmaTable(
-                    user_id=user_id,
-                    guild_id=guild_id,
-                    karma=1,
-                    timestamp_last_message=int(timestamp),
-                )
+                karma_entry = KarmaTable(user_id=user_id, guild_id=guild_id, karma=1,
+                                         timestamp_last_message=int(timestamp), )
                 session.add(karma_entry)
 
             await session.commit()
@@ -180,7 +174,6 @@ class Database:
 
             await self.adjust_karma_for_user(message_author.id, guild_id, amount)
             logging.info(
-                f"Karma {'added' if is_addition else 'removed'}: {amount} for User ID {message_author.id} in Guild ID {guild_id}"
-            )
+                f"Karma {'added' if is_addition else 'removed'}: {amount} for User ID {message_author.id} in Guild ID {guild_id}")
         except Exception as e:
             logging.error(f"Error handling reaction change: {e}")

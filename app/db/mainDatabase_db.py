@@ -27,7 +27,7 @@ class Database:
         self.SessionLocal = sessionmaker(bind=self.engine, class_=AsyncSession, expire_on_commit=False)
 
     async def init_db(self):
-        """Create all tables in the database."""
+        """Create all tables in the db."""
         async with self.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
