@@ -1,8 +1,6 @@
 import discord
 from discord.ext import commands, tasks
-import os
-from database.mainDatabase_db import Database, BirthdayTable
-from sqlalchemy import select, insert, update, delete
+from app.database.mainDatabase_db import Database
 from datetime import date, datetime, timedelta, time
 
 class Stuff(commands.Cog): # create a class for our cog that inherits from commands.Cog

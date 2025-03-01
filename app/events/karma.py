@@ -1,8 +1,8 @@
 from discord.ext import commands, tasks
 import discord
-from sqlalchemy import select, update, delete
+from sqlalchemy import select
 
-from database.karma_db import Database, KarmaTable, RewardsTable
+from app.database.karma_db import Database, RewardsTable
 import logging
 
 class Karma(commands.Cog):
