@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta, time
 import discord
 from discord.ext import commands, tasks
 
-from app.db.mainDatabase_db import Database
+from db import Database
 
 
 class Stuff(commands.Cog):  # create a class for our cog that inherits from commands.Cog
