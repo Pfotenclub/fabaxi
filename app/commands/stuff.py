@@ -16,7 +16,7 @@ class Stuff(commands.Cog): # create a class for our cog that inherits from comma
     @tasks.loop(hours=24)
     async def check_birthdays(self):
         now = datetime.now()
-        target_time = time(17, 18)
+        target_time = time(15, 20)
         target_datetime = datetime.combine(now.date(), target_time)
 
         if now > target_datetime:
