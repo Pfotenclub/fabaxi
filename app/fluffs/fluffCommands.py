@@ -1,10 +1,8 @@
 import discord
 from discord.ext import commands
-import os
-from sqlalchemy import select, update, delete
 import random
 
-from database.fluffs_db import Database, FluffUserTable, MasterFluffTable
+from app.database.fluffs_db import Database
 import logging
 import asyncio
 

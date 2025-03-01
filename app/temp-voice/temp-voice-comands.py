@@ -7,9 +7,9 @@ load_dotenv()
 
 environment = os.getenv("ENVIRONMENT")
 if environment == "DEV":
-    botGuildId = 1001916230069911703
+    botGuildId = os.getenv("DEV_SERVER")
 elif environment == "PROD":
-    botGuildId = 1056514064081231872
+    botGuildId = os.getenv("PROD_SERVER")
 
 tempVoiceCmdIds = { # 0: Rename, 1: Limit, 2: Lock, 3: Unlock, 4: Claim
     0 : "Rename",
