@@ -16,7 +16,7 @@ class Stuff(commands.Cog): # create a class for our cog that inherits from comma
     @tasks.loop(hours=24)
     async def check_birthdays(self):
         now = datetime.now()
-        target_time = time(15, 20)
+        target_time = time(3, 0)
         target_datetime = datetime.combine(now.date(), target_time)
 
         if now > target_datetime:
@@ -45,7 +45,7 @@ class Stuff(commands.Cog): # create a class for our cog that inherits from comma
     @tasks.loop(hours=24)
     async def remove_birthday_role(self):
         now = datetime.now()
-        target_time = time(16, 11) # one hour offset because host is in a different timezone
+        target_time = time(0, 0) # one hour offset because host is in a different timezone
         target_datetime = datetime.combine(now.date(), target_time)
 
         if now > target_datetime:
