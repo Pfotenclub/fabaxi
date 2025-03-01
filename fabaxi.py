@@ -16,6 +16,7 @@ intents.message_content = True
 intents.guild_messages = True
 intents.messages = True
 intents.guilds = True
+intents.members = True
 ##########################################################################
 environment = os.getenv('ENVIRONMENT')  # get the environment variable
 if environment == 'PROD':
