@@ -45,15 +45,16 @@ jobs:
           docker stop ${{ secrets.DOCKER_IMAGE_NAME }} || true
           docker rm ${{ secrets.DOCKER_IMAGE_NAME }} || true
           docker run -d \
-            -e PROD_TOKEN=${{ secrets.PROD_TOKEN }} \
-            -e ENVIRONMENT=${{ secrets.ENVIRONMENT }} \
             -e DB_HOST=${{ secrets.DB_HOST }} \
-            -e DB_PORT=${{ secrets.DB_PORT }} \
-            -e DB_USER=${{ secrets.DB_USER }} \
-            -e DB_PW=${{ secrets.DB_PW }} \
             -e DB_NAME=${{ secrets.DB_NAME }} \
-            -e WEBHOOK_URL=${{ secrets.WEBHOOK_URL }} \
-            -e JOINTOCREATEVOICE=${{ secrets.JOINTOCREATEVOICE }} \
+            -e DB_PORT=${{ secrets.DB_PORT }} \
+            -e DB_PW=${{ secrets.DB_PW }} \
+            -e DB_USER=${{ secrets.DB_USER }} \
+            -e ENVIRONMENT=${{ secrets.ENVIRONMENT }} \
             -e JOINTOCREATEPARENT=${{ secrets.JOINTOCREATEPARENT }} \
+            -e JOINTOCREATEVOICE=${{ secrets.JOINTOCREATEVOICE }} \
+            -e PROD_SERVER=${{ secrets.PROD_SERVER }} \
+            -e PROD_TOKEN=${{ secrets.PROD_TOKEN }} \
+            -e WEBHOOK_URL=${{ secrets.WEBHOOK_URL }} \
             -v /home/chatgpaint/db:/db \
             --name ${{ secrets.DOCKER_IMAGE_NAME }} ${{ secrets.DOCKER_IMAGE_NAME }}
