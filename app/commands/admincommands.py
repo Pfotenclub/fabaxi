@@ -10,7 +10,7 @@ class AdminCommands(commands.Cog): # create a class for our cog that inherits fr
     async def commands(self, message):
         if not message.content.startswith("!"): return
         if message.author.id != 327880195476422656: return # only allow the bot owner to use these commands
-        
+
         elif message.content == "!role-colors":
             rolecolors = {
                 1341767688384675861: "🍏",
@@ -35,6 +35,7 @@ class AdminCommands(commands.Cog): # create a class for our cog that inherits fr
             embed = discord.Embed(title="Role colors", description=embedText)
             embed.color = 0x1abc9c
             embed.set_footer(text=f"To remove your color, react with ❌")
+            embed.set_thumbnail(url="https://img.icons8.com/?size=100&id=Qw82NJLhJoqc&format=png&color=000000")
             msg = await message.channel.send(content="React to change your role color!", embed=embed)
             for role in rolecolors:
                 await msg.add_reaction(rolecolors[role])
