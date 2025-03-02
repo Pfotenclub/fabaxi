@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-import os
 
 class AdminCommands(commands.Cog): # create a class for our cog that inherits from commands.Cog
     # this class is used to create a cog, which is a module that can be added to the bot
@@ -10,15 +9,7 @@ class AdminCommands(commands.Cog): # create a class for our cog that inherits fr
     @discord.Cog.listener("on_message")
     async def commands(self, message):
         if not message.content.startswith("!"): return
-        if message.author.id != 327880195476422656: return
-
-        if message.content == "!stuff":
-            for member in message.guild.members:
-                if member.bot:
-                    continue
-                await member.add_roles(message.guild.get_role(1341774758076874832))
-                print(f"Gave role to {member.name}")
-            await message.channel.send("Done")
+        if message.author.id != 327880195476422656: return # only allow the bot owner to use these commands
         
         elif message.content == "!role-colors":
             rolecolors = {
@@ -42,7 +33,7 @@ class AdminCommands(commands.Cog): # create a class for our cog that inherits fr
                 if role == 0: continue
                 embedText += f"{rolecolors[role]} - <@&{role}>\n"
             embed = discord.Embed(title="Role colors", description=embedText)
-            embed.color = discord.Color.blue()
+            embed.color = 0x1abc9c
             embed.set_footer(text=f"To remove your color, react with ❌")
             msg = await message.channel.send(content="React to change your role color!", embed=embed)
             for role in rolecolors:
