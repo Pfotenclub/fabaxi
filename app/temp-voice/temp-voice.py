@@ -1,26 +1,20 @@
+import logging
 import discord
 from discord.ext import commands
-import pickle
+from db.temp_voice import TempVoiceBackend
 import os
 from dotenv import load_dotenv
 load_dotenv()
-environment = os.getenv("ENVIRONMENT")
 class TempVoice(commands.Cog): # create a class for our cog that inherits from commands.Cog
-    # this class is used to create a cog, which is a module that can be added to the bot
+    logging.basicConfig(level=logging.ERROR, format='%(asctime)s %(message)s', handlers=[logging.StreamHandler()])
 
     def __init__(self, bot): # this is a special method that is called when the cog is loaded
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        joinToCreateParent = None
-        joinToCreateVoice = None
-        if environment == 'DEV':
-            joinToCreateVoice = 1234040036299640844
-            joinToCreateParent = 1234039999775772768
-        elif environment == 'PROD':
-            joinToCreateVoice = 1229081255115624549
-            joinToCreateParent = 1058459667887575131
+        joinToCreateVoice = int(os.getenv("JOINTOCREATEVOICE"))
+        joinToCreateParent = int(os.getenv("JOINTOCREATEPARENT"))
         
         # if member was not in a voice channel before
         if before.channel is None:
@@ -59,7 +53,7 @@ class TempVoice(commands.Cog): # create a class for our cog that inherits from c
                 elif len(before.channel.members) == 0:
                     await deleteTempVoice(self.bot, before.channel.id) # delete the temporary voice channel
             # if member moved from a temp channel to another temp channel
-            elif before.channel.category_id == joinToCreateParent and after.channel.category_id == joinToCreateParent:
+            elif before.channel.category_id == os.getenv("JOINTOCREATEPARENT") and after.channel.category_id == os.getenv("JOINTOCREATEPARENT"):
                 # if member moved from the joinToCreateVoice channel
                 if before.channel.id == joinToCreateVoice:
                     return # do nothing - joinToCreateVoice is not a temp channel and user was probably moved by the bot
@@ -67,7 +61,7 @@ class TempVoice(commands.Cog): # create a class for our cog that inherits from c
                 if before.channel.id != joinToCreateVoice and after.channel.id == joinToCreateVoice:
                     # if member was the last one in the channel he left
                     if len(before.channel.members) == 0: await deleteTempVoice(self.bot, before.channel.id) # delete the temporary voice channel
-                    await createTempVoice(self.bot, joinToCreateParent, member) # create a temporary voice channel for the member
+                    await createTempVoice(self.bot, os.getenv("JOINTOCREATEPARENT"), member) # create a temporary voice channel for the member
                 # if member moved from a temp channel to another temp channel
                 if before.channel.id != joinToCreateVoice and after.channel.id != joinToCreateVoice:
                     # if member was the last one in the channel he left
@@ -82,7 +76,7 @@ def setup(bot): # this is called by Pycord to setup the cog
 async def createTempVoice(bot, joinToCreateParent, member):
     category = bot.get_channel(joinToCreateParent) # get the category
     channel = await category.create_voice_channel(f"{member.display_name}'s Channel", user_limit=10) # create the channel with 5 slots
-    pickle.dump((channel.id, member.id), open(f"temp-voice-ids/{channel.id}.pkl", "wb")) # save the channel id and member id to a file
+    await TempVoiceBackend().create_temp_voice(member.id, channel.id, member.guild.id) # save the channel id to the database
     await member.move_to(channel) # move the member to the channel
     return channel
 
@@ -90,5 +84,5 @@ async def createTempVoice(bot, joinToCreateParent, member):
 async def deleteTempVoice(bot, tempVoiceId):
     channel = bot.get_channel(tempVoiceId) # get the channel
     await channel.delete() # delete the channel
-    os.remove(f"temp-voice-ids/{channel.id}.pkl") # remove the file
+    await TempVoiceBackend().delete_temp_voice(tempVoiceId) # delete the channel from the database
     return channel

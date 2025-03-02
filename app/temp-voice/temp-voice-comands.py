@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-import pickle
+from db.temp_voice import TempVoiceBackend
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -11,7 +11,10 @@ if environment == "DEV":
 elif environment == "PROD":
     botGuildId = os.getenv("PROD_SERVER")
 
-tempVoiceCmdIds = { # 0: Rename, 1: Limit, 2: Lock, 3: Unlock, 4: Claim
+joinToCreateVoice = int(os.getenv("JOINTOCREATEVOICE"))
+joinToCreateParent = int(os.getenv("JOINTOCREATEPARENT"))
+
+tempVoiceCmdIds = {
     0 : "Rename",
     1 : "Limit",
     2 : "Lock",
@@ -29,7 +32,13 @@ class TempVoiceInterface(discord.ui.Button): # Button for the Temp Voice Interfa
 
     async def callback(self, interaction: discord.Interaction): # when the button is clicked
         cmdId = int(self.custom_id) # get the command id
-        noVoiceChannelText = "You don't have a temporary voice channel!"
+        if interaction.user.voice is None: return await interaction.response.send_message("You must be in a voice channel to use this command!", ephemeral=True)
+        userChannel = interaction.user.voice.channel
+        if cmdId == 4:
+            await ClaimChannel().callback(interaction)
+        
+        if userChannel.category_id != joinToCreateParent: return await interaction.response.send_message("You must be in a temporary voice channel to use this command!", ephemeral=True)
+
         if cmdId == 0: # if the command id is 0
             if not memberIsChannelOwner(interaction.user): # if the member is not the channel owner
                 return await interaction.response.send_message(noVoiceChannelText, ephemeral=True) # send a message that the member does not have a temporary voice channel
@@ -46,8 +55,6 @@ class TempVoiceInterface(discord.ui.Button): # Button for the Temp Voice Interfa
             if not memberIsChannelOwner(interaction.user): # if the member is not the channel owner
                 return await interaction.response.send_message(noVoiceChannelText, ephemeral=True) # send a message that the member does not have a temporary voice channel
             await UnlockChannel().callback(interaction) # unlock the channel
-        elif cmdId == 4: # if the command id is 4
-            await ClaimChannel().callback(interaction) # claim the channel
 
 class TempVoiceCog(commands.Cog):
     def __init__(self, bot):
@@ -143,20 +150,18 @@ class LimitChannel(discord.ui.Modal): # Modal for setting the user limit
 
 class ClaimChannel():
     async def callback(self, interaction: discord.Interaction): # when the command is called
+
         
-        if interaction.user.voice is None: # if the user is not in a voice channel
-            return await interaction.response.send_message("You must be in a voice channel to claim a temporary voice channel!", ephemeral=True) # send a message that the user has to be in a voice channel
-        elif memberIsChannelOwner(interaction.user): # if the member is the channel owner
+
+        userChannel = interaction.user.voice.channel
+        if await memberIsChannelOwner(userChannel.id, interaction.user.id): # if the member is the channel owner
             return await interaction.response.send_message("You already have a temporary voice channel!", ephemeral=True) # send a message that the member already has a temporary voice channel
 
-        channel_id, member_id = pickle.load(open(f"temp-voice-ids/{interaction.user.voice.channel.id}.pkl", "rb")) # get the channel id and member id
-
         for member in interaction.user.voice.channel.members: # for every member in the channel
-            if member.id == member_id: # if the member id is the same as the member id
+            if member.id == await TempVoiceBackend().get_owner_id(userChannel.id): # if the member id is the same as the member id
                 return await interaction.response.send_message("The channel owner is already in the temporary voice channel!", ephemeral=True) # send a message that the channel owner is already in the channel
         
-        os.remove(f"temp-voice-ids/{channel_id}.pkl") # remove the file
-        pickle.dump((channel_id, member.id), open(f"temp-voice-ids/{channel_id}.pkl", "wb")) # dump the new file
+        await TempVoiceBackend().change_channel_owner_id(userChannel.id, interaction.user.id) # change the channel owner id
 
         await interaction.user.voice.channel.edit(name=f"{interaction.user.display_name}'s Channel") # set the name of the channel to the member's name
 
@@ -165,7 +170,7 @@ class ClaimChannel():
             description="You have successfully claimed the temporary voice channel!", # set the description
             color=discord.Color.blurple() # set the color
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True) # send the embed
+        await interaction.respond(embed=embed, ephemeral=True) # send the embed
 
 class LockChannel():
     async def callback(self, interaction: discord.Interaction): # when the command is called
@@ -194,12 +199,9 @@ class UnlockChannel(): # when the command is called
 def setup(bot):
     bot.add_cog(TempVoiceCog(bot))
 
-def memberIsChannelOwner(member):
-    for filename in os.listdir("temp-voice-ids"): # for every file in the directory
-        if filename.endswith(".pkl"): # if the file is a pickle file
-            channel_id, member_id = pickle.load(open(f"temp-voice-ids/{filename}", "rb")) # load the file
-            if member_id == member.id: # if the member id is the same as the member id
-                return True # return true
+async def memberIsChannelOwner(channel_id, member_id):
+    if await TempVoiceBackend().get_owner_id(channel_id=channel_id) == member_id:
+        return True
     return False
 
 def getTempChannelFromMember(member): # get the channel from the member
