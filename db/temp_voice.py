@@ -4,7 +4,7 @@ from sqlalchemy import insert, select, delete, update
 
 from db import Database
 from db.tables import TempVoiceTable
-
+# fuzck u
 
 class TempVoiceBackend(Database):
 
