@@ -16,7 +16,7 @@ class AutoCommands(commands.Cog):
             if ctx.message.content == "n!help":
                 await ctx.send("Bitte beachte, dass wir nun / Commands benutzen.")
         elif isinstance(error, commands.CheckFailure):
-            await ctx.respond("Es scheint als seist du nicht registriert")
+            await ctx.send("Es scheint als seist du nicht registriert")
         else:
             self.counter = + 1
             # channel = self.bot.get_channel(data["error"])

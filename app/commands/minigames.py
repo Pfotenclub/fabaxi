@@ -20,11 +20,9 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
     def __init__(self, bot): # this is a special method that is called when the cog is loaded
         self.bot = bot
         
-        
-    
-    minigamesCommandGroup = discord.SlashCommandGroup(name="minigames", description="A selection of minigames to play with your friends.", contexts={discord.InteractionContextType.guild})
-    @minigamesCommandGroup.command(name="counting", description="Count up!", contexts={discord.InteractionContextType.guild})
-    async def counting(self, ctx):
+    @commands.command(name="counting")
+    @commands.is_owner()
+    async def startCounting(self, ctx):
         countChannel = None
         if environment == "DEV": countChannel = 1335743804346470411
         elif environment == "PROD": countChannel = 1337733289695514725
