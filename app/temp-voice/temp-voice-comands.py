@@ -55,8 +55,9 @@ class TempVoiceCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.slash_command(name="temp-voice-interface", guild_ids=[botGuildId], description="Sends the message for the voicechannel Interface (Only Bot Owner)")
-    async def rolebutton(self, ctx: discord.ApplicationContext): # when the command is called
+    @commands.command(name="temp-voice-interface")
+    @commands.is_owner()
+    async def tempVoiceInterface(self, ctx: discord.ApplicationContext): # when the command is called
         if ctx.author.id != 327880195476422656: # if the author is not the bot owner
             return await ctx.respond("You are not the Bot Owner!", ephemeral=True) # send a message that the author is not the bot owner
         view = discord.ui.View(timeout=None) # create a view

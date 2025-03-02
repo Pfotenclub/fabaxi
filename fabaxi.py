@@ -21,10 +21,10 @@ intents.members = True
 environment = os.getenv('ENVIRONMENT')  # get the environment variable
 if environment == 'PROD':
     TOKEN = os.getenv('PROD_TOKEN')
-    bot = commands.Bot(intents=intents)
+    bot = commands.Bot(command_prefix='!', intents=intents)
 else:
     TOKEN = os.getenv('DEV_TOKEN')
-    bot = commands.Bot(debug_guilds=[os.getenv("DEV_SERVER")], intents=intents)
+    bot = commands.Bot(command_prefix='!', debug_guilds=[os.getenv("DEV_SERVER")], intents=intents)
 ##########################################################################
 logging.basicConfig(level=logging.WARN, format='%(asctime)s %(message)s', handlers=[logging.StreamHandler()])
 ##########################################################################
