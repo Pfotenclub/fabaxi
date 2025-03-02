@@ -4,6 +4,19 @@ from sqlalchemy import Column, Integer, BigInteger
 
 from db import Base
 
+class TempVoiceTable(Base):
+    __tablename__ = "temp_voice"
+    owner_id = Column(BigInteger)
+    channel_id = Column(BigInteger, primary_key=True)
+    guild_id = Column(BigInteger)
+
+    def __init__(self, owner_id, channel_id, guild_id):
+        super().__init__()
+        self.owner_id = owner_id
+        self.channel_id = channel_id
+        self.guild_id = guild_id
+
+        
 
 class BirthdayTable(Base):
     __tablename__ = "birthdays"
