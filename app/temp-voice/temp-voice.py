@@ -53,7 +53,7 @@ class TempVoice(commands.Cog): # create a class for our cog that inherits from c
                 elif len(before.channel.members) == 0:
                     await deleteTempVoice(self.bot, before.channel.id) # delete the temporary voice channel
             # if member moved from a temp channel to another temp channel
-            elif before.channel.category_id == os.getenv("JOINTOCREATEPARENT") and after.channel.category_id == os.getenv("JOINTOCREATEPARENT"):
+            elif before.channel.category_id == joinToCreateParent and after.channel.category_id == joinToCreateParent:
                 # if member moved from the joinToCreateVoice channel
                 if before.channel.id == joinToCreateVoice:
                     return # do nothing - joinToCreateVoice is not a temp channel and user was probably moved by the bot
@@ -61,7 +61,7 @@ class TempVoice(commands.Cog): # create a class for our cog that inherits from c
                 if before.channel.id != joinToCreateVoice and after.channel.id == joinToCreateVoice:
                     # if member was the last one in the channel he left
                     if len(before.channel.members) == 0: await deleteTempVoice(self.bot, before.channel.id) # delete the temporary voice channel
-                    await createTempVoice(self.bot, os.getenv("JOINTOCREATEPARENT"), member) # create a temporary voice channel for the member
+                    await createTempVoice(self.bot, joinToCreateParent, member) # create a temporary voice channel for the member
                 # if member moved from a temp channel to another temp channel
                 if before.channel.id != joinToCreateVoice and after.channel.id != joinToCreateVoice:
                     # if member was the last one in the channel he left
