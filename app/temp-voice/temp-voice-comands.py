@@ -39,21 +39,16 @@ class TempVoiceInterface(discord.ui.Button): # Button for the Temp Voice Interfa
         
         if userChannel.category_id != joinToCreateParent: return await interaction.response.send_message("You must be in a temporary voice channel to use this command!", ephemeral=True)
 
+        noChannelOwnerText = "You must be the channel owner to use this command!"
+        if not await memberIsChannelOwner(userChannel.id, interaction.user.id): # if the member is not the channel owner
+                return await interaction.response.send_message(noChannelOwnerText, ephemeral=True) # send a message that the member does not have a temporary voice channel
         if cmdId == 0: # if the command id is 0
-            if not memberIsChannelOwner(interaction.user): # if the member is not the channel owner
-                return await interaction.response.send_message(noVoiceChannelText, ephemeral=True) # send a message that the member does not have a temporary voice channel
             await interaction.response.send_modal(RenameChannel(title="Rename your voice channel")) # send the rename channel modal
         elif cmdId == 1: # if the command id is 1
-            if not memberIsChannelOwner(interaction.user): # if the member is not the channel owner
-                return await interaction.response.send_message(noVoiceChannelText, ephemeral=True) # send a message that the member does not have a temporary voice channel
             await interaction.response.send_modal(LimitChannel(title="Set Userlimit")) # send the limit channel modal
         elif cmdId == 2: # if the command id is 2
-            if not memberIsChannelOwner(interaction.user): # if the member is not the channel owner
-                return await interaction.response.send_message(noVoiceChannelText, ephemeral=True) # send a message that the member does not have a temporary voice channel
             await LockChannel().callback(interaction) # lock the channel
         elif cmdId == 3: # if the command id is 3
-            if not memberIsChannelOwner(interaction.user): # if the member is not the channel owner
-                return await interaction.response.send_message(noVoiceChannelText, ephemeral=True) # send a message that the member does not have a temporary voice channel
             await UnlockChannel().callback(interaction) # unlock the channel
 
 class TempVoiceCog(commands.Cog):
@@ -69,7 +64,8 @@ class TempVoiceCog(commands.Cog):
         embed = discord.Embed( # create an embed
             title="Temp Voice Interface", # set the title
             description="This Interface can be used to configure the temporary voice channels!", # set the description
-            color=discord.Color.blurple() # set the color
+            color=0x1abc9c, # set the color
+            thumbnail="https://img.icons8.com/?size=100&id=aKW2O80wacNj&format=png&color=000000"
         )
 
         embed.set_footer(text="⚙️ Click on the buttons to use the interface!") # set the footer
@@ -77,6 +73,7 @@ class TempVoiceCog(commands.Cog):
         for cmdId in tempVoiceCmdIds: # for every command id
             view.add_item(TempVoiceInterface(cmdId)) # add the button to the view
         await ctx.send(embed=embed, view=view) # send the embed with the view
+        await ctx.respond("Message sent!", ephemeral=True) # send a message that the message was sent
     
     @commands.Cog.listener() # when the bot is ready
     async def on_ready(self): # when the bot is ready
@@ -98,7 +95,7 @@ class RenameChannel(discord.ui.Modal): # Modal for renaming the channel
         )
     async def callback(self, interaction: discord.Interaction): # when the modal is submitted
 
-        channel = getTempChannelFromMember(interaction.user) # get the channel
+        channel = interaction.user.voice.channel # get the channel
         if channel is not None: # if the channel exists
             try:
                 if self.children[0].value: # if the value is not empty
@@ -109,12 +106,13 @@ class RenameChannel(discord.ui.Modal): # Modal for renaming the channel
                 embed = discord.Embed( # create an embed
                 title="Update successful!", # set the title
                 description=f"Your channel is now named {channel.name}!", # set the description
-                color=discord.Color.embed_background(), # set the color
+                color=interaction.user.top_role.color, # set the color
+                thumbnail="https://img.icons8.com/?size=100&id=oJQSZNne5Rp0&format=png&color=000000"
                 )
                 await interaction.response.send_message(embeds=[embed], ephemeral=True) # send the embed
             except discord.HTTPException as e:
                 if e.status == 429: # if the error is a rate limit error
-                    await interaction.response.send_message("You can only rename the channel twice every 10 minutes.", ephemeral=True) # send a rate limit message
+                    await interaction.response.send_message("You've ran into the Discord rate limit!\nPlease try again in 10 minutes.", ephemeral=True) # send a rate limit message
                 else:
                     raise e # raise the error if it is not a rate limit error
 
@@ -132,19 +130,19 @@ class LimitChannel(discord.ui.Modal): # Modal for setting the user limit
         )
     async def callback(self, interaction: discord.Interaction): # when the modal is submitted
             
+            channel = interaction.user.voice.channel # get the channel
             if not self.children[0].value: # if the value is empty
-                channel = getTempChannelFromMember(interaction.user) # get the channel
                 self.children[0].value = "10" # set the value to 10 
                 await channel.edit(user_limit=10) # set the limit to 10
             elif self.children[0].value.isnumeric(): # if the value is a number
-                channel = getTempChannelFromMember(interaction.user) # get the channel
                 await channel.edit(user_limit=int(self.children[0].value)) # set the limit to the value
             else:
                 return await interaction.response.send_message("Please enter a valid number! (1 - 99)", ephemeral=True) # send a message that the value is not a number
             embed = discord.Embed( # create an embed
                     title="Update successful!", # set the title
-                    description=f"Your channel now has a limit of {self.children[0].value}!", # set the description
-                    color=discord.Color.embed_background(), # set the color
+                    description=f"Your channel now has a limit of {channel.user_limit}!", # set the description
+                    color=interaction.user.top_role.color, # set the color
+                    thumbnail="https://img.icons8.com/?size=100&id=2v99zq45tmel&format=png&color=000000"
                 )
             await interaction.response.send_message(embeds=[embed], ephemeral=True) # send the embed
 
@@ -168,31 +166,42 @@ class ClaimChannel():
         embed = discord.Embed( # create an embed
             title="Temporary voice channel claimed!", # set the title
             description="You have successfully claimed the temporary voice channel!", # set the description
-            color=discord.Color.blurple() # set the color
+            color=interaction.user.top_role.color, # set the color
+            thumbnail="https://img.icons8.com/?size=100&id=2HUccuweutbu&format=png&color=000000"
         )
         await interaction.respond(embed=embed, ephemeral=True) # send the embed
 
 class LockChannel():
     async def callback(self, interaction: discord.Interaction): # when the command is called
         
-        channel = getTempChannelFromMember(interaction.user) # get the channel
-        await channel.set_permissions(interaction.guild.default_role, connect=False) # set the permissions
+        channel = interaction.user.voice.channel # get the channel
+        
+        permissions = {
+            interaction.guild.default_role: discord.PermissionOverwrite(connect=False),
+            interaction.user: discord.PermissionOverwrite(connect=True)
+        }
+        await channel.edit(overwrites=permissions) # set the permissions
         embed = discord.Embed( # create an embed
             title="Update successful!", # set the title
             description="Your temporary voice channel has been successfully locked!", # set the description
-            color=discord.Color.blurple() # set the color
+            color=interaction.user.top_role.color, # set the color
+            thumbnail="https://img.icons8.com/?size=100&id=znpDNZWhQe6p&format=png&color=000000"
         )
         await interaction.response.send_message(embed=embed, ephemeral=True) # send the embed
 
 class UnlockChannel(): # when the command is called
     async def callback(self, interaction: discord.Interaction): # when the command is called
         
-        channel = getTempChannelFromMember(interaction.user) # get the channel
-        await channel.set_permissions(interaction.guild.default_role, connect=True) # set the permissions
+        channel = interaction.user.voice.channel # get the channel
+        permissions = {
+            interaction.guild.default_role: discord.PermissionOverwrite(connect=True),
+        }
+        await channel.edit(overwrites=permissions)
         embed = discord.Embed( # create an embed
             title="Update successful!", # set the title
             description="Your temporary voice channel has been successfully unlocked!", # set the description
-            color=discord.Color.blurple() # set the color
+            color=interaction.user.top_role.color, # set the color
+            thumbnail="https://img.icons8.com/?size=100&id=bmqc7DrIxfXZ&format=png&color=000000"
         )
         await interaction.response.send_message(embed=embed, ephemeral=True) # send the embed
 
@@ -203,11 +212,3 @@ async def memberIsChannelOwner(channel_id, member_id):
     if await TempVoiceBackend().get_owner_id(channel_id=channel_id) == member_id:
         return True
     return False
-
-def getTempChannelFromMember(member): # get the channel from the member
-    for filename in os.listdir("temp-voice-ids"): # for every file in the directory
-        if filename.endswith(".pkl"): # if the file is a pickle file
-            channel_id, member_id = pickle.load(open(f"temp-voice-ids/{filename}", "rb")) # load the file
-            if member_id == member.id: # if the member id is the same as the member id
-                return member.guild.get_channel(channel_id) # return the channel
-    return None
