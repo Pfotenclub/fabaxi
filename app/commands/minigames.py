@@ -22,11 +22,11 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
         
     @commands.command(name="counting")
     @commands.is_owner()
-    async def startCounting(self, ctx):
+    async def startCounting(self, ctx: commands.Context):
         countChannel = None
         if environment == "DEV": countChannel = 1335743804346470411
         elif environment == "PROD": countChannel = 1337733289695514725
-        if ctx.channel_id != countChannel: return await ctx.respond("You can only start counting in the counting channel!", ephemeral=True)
+        if ctx.channel.id != countChannel: return await ctx.send("You can only start counting in the counting channel!")
 
         countJson = None
         with open(os.path.join(data_path, "count.json"), "r") as file: countJson = json.load(file)
@@ -36,8 +36,8 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             countJson["count"] = 0
             with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
             await ctx.respond("Counting is starting soon. Please wait.")
-        elif countJson["status"] == "running": await ctx.respond(f"The current count is {countJson['count']}.")
-        elif countJson["status"] == "starting": await ctx.respond("Counting is starting soon. Please wait.")
+        elif countJson["status"] == "running": await ctx.send(f"The current count is {countJson['count']}.")
+        elif countJson["status"] == "starting": await ctx.send("Counting is starting soon. Please wait.")
 
     @discord.Cog.listener("on_message")
     async def countingGame(self, message):
