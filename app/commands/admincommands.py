@@ -26,7 +26,7 @@ class AdminCommands(commands.Cog): # create a class for our cog that inherits fr
         rolecolors = roleJson["rolecolors"]
         embedText = ""
         for role in rolecolors:
-            if role == 0: continue
+            if int(role) == 0: continue
             embedText += f"{rolecolors[role]} - <@&{int(role)}>\n"
         embed = discord.Embed(title="Role colors", description=embedText)
         embed.color = 0x1abc9c
