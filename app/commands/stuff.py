@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta, time
 import discord
 from discord.ext import commands, tasks
 
-from db import Database
+from db.birthdays import BirthdayBackend
 
 
 class Stuff(commands.Cog):  # create a class for our cog that inherits from commands.Cog
@@ -11,8 +11,6 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
 
     def __init__(self, bot):  # this is a special method that is called when the cog is loaded
         self.bot: discord.Bot = bot
-        self.db = Database()
-        self.bot.loop.create_task(self.db.init_db())
         self.check_birthdays.start()
         self.remove_birthday_role.start()
 
@@ -28,7 +26,7 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
         await discord.utils.sleep_until(target_datetime)
 
         today = target_datetime.date()
-        users_with_birthday = await self.db.get_users_with_birthday(today.day, today.month)
+        users_with_birthday = await BirthdayBackend().get_users_with_birthday(today.day, today.month)
         for user in users_with_birthday:
             guild: discord.Guild = self.bot.get_guild(user.guild_id)
             member = guild.get_member(user.user_id)
@@ -49,7 +47,7 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
     @tasks.loop(hours=24)
     async def remove_birthday_role(self):
         now = datetime.now()
-        target_time = time(1, 0)  # one hour offset because host is in a different timezone
+        target_time = time(0, 0)  # one hour offset because host is in a different timezone
         target_datetime = datetime.combine(now.date(), target_time)
 
         if now > target_datetime:
@@ -85,11 +83,11 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
         if birthday > date.today():
             return await ctx.respond("You can't set a birthday in the future.", ephemeral=True)
         try:
-            if await self.db.get_user_record(ctx.author.id, ctx.guild.id) is None:
-                await self.db.create_user_record(ctx.author.id, ctx.guild.id, birthday)
+            if await BirthdayBackend().get_user_record(ctx.author.id, ctx.guild.id) is None:
+                await BirthdayBackend().create_user_record(ctx.author.id, ctx.guild.id, birthday)
                 await ctx.respond("Birthday set!")
             else:
-                await self.db.edit_user_record(ctx.author.id, ctx.guild.id, birthday)
+                await BirthdayBackend().update_user_record(ctx.author.id, ctx.guild.id, birthday)
                 await ctx.respond("Birthday updated!")
         except Exception as e:
             await ctx.respond("An error occurred. Please try again later.", ephemeral=True)
@@ -99,7 +97,7 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
                                   contexts={discord.InteractionContextType.guild})
     async def deleteBirthday(self, ctx):
         try:
-            await self.db.delete_user_record(ctx.author.id, ctx.guild.id)
+            await BirthdayBackend().delete_user_record(ctx.author.id, ctx.guild.id)
             await ctx.respond("Birthday deleted!")
         except Exception as e:
             await ctx.respond("An error occurred. Please try again later.", ephemeral=True)
@@ -118,7 +116,7 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
         embed.title = f"{user.global_name}'s Birthday"
         embed.set_thumbnail(url=user.avatar.url)
         try:
-            user_record = await self.db.get_user_record(user.id, ctx.guild.id)
+            user_record = await BirthdayBackend().get_user_record(user.id, ctx.guild.id)
             if user_record is None:
                 embed.description = "No birthday set."
             else:

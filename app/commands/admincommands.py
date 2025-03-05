@@ -18,7 +18,7 @@ class AdminCommands(commands.Cog): # create a class for our cog that inherits fr
 
     @commands.command(name="role-colors") # this is a command that can be used by users
     @commands.is_owner()
-    async def roleColors(self, ctx): # the first argument of a command is always the context
+    async def roleColors(self, ctx: commands.Context): # the first argument of a command is always the context
 
         roleJson = None
         with open(os.path.join(data_path, "rolecolors.json"), "r", encoding='utf-8') as file: roleJson = json.load(file)
@@ -42,7 +42,8 @@ class AdminCommands(commands.Cog): # create a class for our cog that inherits fr
             file.seek(0)
             json.dump(data, file, ensure_ascii=False, indent=4)
             file.truncate()
-    
+
+        await ctx.message.delete()
 
     @discord.Cog.listener("on_raw_reaction_add")
     async def chooseRoleColor(self, payload):
