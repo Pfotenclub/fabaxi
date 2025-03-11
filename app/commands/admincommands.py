@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 environment = os.getenv("ENVIRONMENT")
 data_path = None
-if environment == "DEV": data_path = ".\data"
+if environment == "DEV": data_path = "./data"
 elif environment == "PROD": data_path = "/db"
 
 class AdminCommands(commands.Cog): # create a class for our cog that inherits from commands.Cog
@@ -18,7 +18,7 @@ class AdminCommands(commands.Cog): # create a class for our cog that inherits fr
 
     @commands.command(name="role-colors") # this is a command that can be used by users
     @commands.is_owner()
-    async def roleColors(self, ctx: commands.Context): # the first argument of a command is always the context
+    async def roleColors(self, ctx: commands.context): # the first argument of a command is always the context
 
         roleJson = None
         with open(os.path.join(data_path, "rolecolors.json"), "r", encoding='utf-8') as file: roleJson = json.load(file)
