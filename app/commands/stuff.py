@@ -83,7 +83,7 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
         if birthday > date.today():
             return await ctx.respond("You can't set a birthday in the future.", ephemeral=True)
         try:
-            if await BirthdayBackend().get_user_record(ctx.author.id, ctx.guild.id) is None:
+            if not await BirthdayBackend().get_user_record(ctx.author.id, ctx.guild.id):
                 await BirthdayBackend().create_user_record(ctx.author.id, ctx.guild.id, birthday)
                 await ctx.respond("Birthday set!")
             else:
@@ -108,22 +108,23 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
     @discord.option(name="user", description="The user whose birthday you want to view.",
                     type=discord.SlashCommandOptionType.user, required=False)
     async def viewBirthday(self, ctx: discord.InteractionContextType, user: discord.User = None):
-        birthday: date = None
         embed = discord.Embed()
         embed.color = discord.Color.blue()
         if user is None:
             user = ctx.author
+        if user.bot: return await ctx.respond("Bots don't have birthdays.")
         embed.title = f"{user.global_name}'s Birthday"
-        embed.set_thumbnail(url=user.avatar.url)
+        if user.avatar: embed.set_thumbnail(url=user.avatar.url)
         try:
             user_record = await BirthdayBackend().get_user_record(user.id, ctx.guild.id)
-            if user_record is None:
+
+            if not user_record:  # Keine Daten gefunden
                 embed.description = "No birthday set."
+                pass
+            elif user_record.year == 1900:
+                embed.description = f"{user_record.day}.{user_record.month}."
             else:
-                if user_record.year == 1900:
-                    embed.description = f"{user_record.day}.{user_record.month}."
-                else:
-                    embed.description = f"{user_record.day}.{user_record.month}.{user_record.year}"
+                embed.description = f"{user_record.day}.{user_record.month}.{user_record.year}"
         except Exception as e:
             embed.description = "An error occurred. Please try again later."
             print(e)
