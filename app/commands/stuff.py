@@ -113,7 +113,6 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
         if user is None:
             user = ctx.author
         if user.bot: return await ctx.respond("Bots don't have birthdays.")
-        embed.title = f"{user.global_name}'s Birthday"
         if user.avatar: embed.set_thumbnail(url=user.avatar.url)
         try:
             user_record = await BirthdayBackend().get_user_record(user.id, ctx.guild.id)
@@ -122,12 +121,20 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
                 embed.description = "No birthday set."
                 pass
             elif user_record.year == 1900:
-                embed.description = f"{user_record.day}.{user_record.month}."
+                birthday = date(user_record.year, user_record.month, user_record.day)
+                embed.add_field(name=f"{user.global_name}'s Birthday", value=f"{birthday.day}. {birthday.strftime('%B')}")
             else:
-                embed.description = f"{user_record.day}.{user_record.month}.{user_record.year}"
+                birthday = date(user_record.year, user_record.month, user_record.day)
+                embed.add_field(name=f"{user.global_name}'s Birthday",
+                                value=f"{birthday.day}. {birthday.strftime('%B')} {birthday.year}")
+                age = date.today().year - birthday.year
+                if (date.today().month, date.today().day) < (birthday.month, birthday.day): age -= 1
+                embed.add_field(name="Age", value=f"{age} years")
         except Exception as e:
             embed.description = "An error occurred. Please try again later."
             print(e)
+        if user.color != discord.Color.default(): embed.color = user.color
+        else: embed.color = 0x1abc9c
         await ctx.respond(embed=embed)
 
 
