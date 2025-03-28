@@ -87,8 +87,9 @@ class Karma(commands.Cog):
         if message.author.bot:
             return
 
-        await self.db.handle_reaction_change(message_author=message.author, guild_id=payload.guild_id,
+        await UserKarma.handle_reaction_change(message_author=message.author, guild_id=payload.guild_id,
             emoji_id=payload.emoji.id, is_addition=True)
+        print(f"Reaction added: {payload.emoji.id}")
 
     @discord.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
@@ -99,7 +100,7 @@ class Karma(commands.Cog):
         if message.author.bot:
             return
 
-        await self.db.handle_reaction_change(message_author=message.author, guild_id=payload.guild_id,
+        await UserKarma.handle_reaction_change(message_author=message.author, guild_id=payload.guild_id,
             emoji_id=payload.emoji.id, is_addition=False)
 
     @discord.slash_command(name="adjustkarma", contexts={discord.InteractionContextType.guild})
