@@ -87,7 +87,7 @@ class Karma(commands.Cog):
         if message.author.bot:
             return
 
-        await self.db.handle_reaction_change(message_author=message.author, guild_id=payload.guild_id,
+        await UserKarma.handle_reaction_change(message_author=message.author, guild_id=payload.guild_id,
             emoji_id=payload.emoji.id, is_addition=True)
 
     @discord.Cog.listener()
@@ -99,7 +99,7 @@ class Karma(commands.Cog):
         if message.author.bot:
             return
 
-        await self.db.handle_reaction_change(message_author=message.author, guild_id=payload.guild_id,
+        await UserKarma.handle_reaction_change(message_author=message.author, guild_id=payload.guild_id,
             emoji_id=payload.emoji.id, is_addition=False)
 
     @discord.slash_command(name="adjustkarma", contexts={discord.InteractionContextType.guild})
