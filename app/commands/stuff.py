@@ -67,11 +67,11 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
 
     @birthdayCommandGroup.command(name="set", description="Set your birthday.",
                                   contexts={discord.InteractionContextType.guild})
-    @discord.option(name="day", description="The day of your birthday.", type=discord.SlashCommandOptionType.integer,
+    @discord.option(name="day", description="The day of your birthday as a number. (eg. 14)", type=discord.SlashCommandOptionType.integer,
                     required=True)
-    @discord.option(name="month", description="The month of your birthday.",
+    @discord.option(name="month", description="The month of your birthday as a number. (eg. 5 for May)",
                     type=discord.SlashCommandOptionType.integer, required=True)
-    @discord.option(name="year", description="The year of your birthday.", type=discord.SlashCommandOptionType.integer,
+    @discord.option(name="year", description="The year of your birthday as a number. (eg. 2000)", type=discord.SlashCommandOptionType.integer,
                     required=False)
     async def setBirthday(self, ctx, day: int, month: int, year: int = 1900):
         birthday = None
