@@ -92,8 +92,8 @@ class Karma(commands.Cog):
 
     @discord.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
-        guild = self.bot.get_guild(payload.guild_id)
-        channel = guild.get_channel(payload.channel_id)
+        guild: discord.Guild = self.bot.get_guild(payload.guild_id)
+        channel: discord.TextChannel = guild.get_channel_or_thread(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
 
         if message.author.bot:
