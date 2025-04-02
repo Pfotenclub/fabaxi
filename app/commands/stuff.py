@@ -2,6 +2,7 @@ from datetime import date, datetime, timedelta, time
 
 import discord
 from discord.ext import commands, tasks
+from ext.system import default_embed
 
 from db import Database
 from db.economy import EconomyBackend
@@ -110,11 +111,11 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
     @discord.option(name="user", description="The user whose birthday you want to view.",
                     type=discord.SlashCommandOptionType.user, required=False)
     async def viewBirthday(self, ctx: discord.InteractionContextType, user: discord.User = None):
-        embed = discord.Embed()
-        embed.color = discord.Color.blue()
         if user is None:
             user = ctx.author
         if user.bot: return await ctx.respond("Bots don't have birthdays.")
+        embed: discord.Embed = default_embed(user=user)
+        embed.title = f"{user.global_name}'s Birthday"
         if user.avatar: embed.set_thumbnail(url=user.avatar.url)
         try:
             user_record = await BirthdayBackend().get_user_record(user.id, ctx.guild.id)
