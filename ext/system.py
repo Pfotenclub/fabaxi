@@ -21,7 +21,9 @@ async def default_embed(user: discord.User, fact: bool = True):
     if user.color != discord.Color.default(): embed.color = user.color
     else: embed.color = 0x1abc9c
     if fact:
-        response = requests.get("https://uselessfacts.jsph.pl/api/v2/facts/random?language=en")
-        fact = response.json().get("text", "No fact found.")
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://uselessfacts.jsph.pl/api/v2/facts/random?language=en") as response:
+                data = await response.json()
+                fact = data.get("text", "No fact found.")
         embed.set_footer(text=fact)
     return embed
