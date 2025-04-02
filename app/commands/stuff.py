@@ -114,7 +114,7 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
         if user is None:
             user = ctx.author
         if user.bot: return await ctx.respond("Bots don't have birthdays.")
-        embed: discord.Embed = default_embed(user=user)
+        embed: discord.Embed = await default_embed(user=user)
         embed.title = f"{user.global_name}'s Birthday"
         if user.avatar: embed.set_thumbnail(url=user.avatar.url)
         try:
