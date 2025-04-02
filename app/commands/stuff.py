@@ -5,6 +5,7 @@ from discord.ext import commands, tasks
 
 from db import Database
 from db.economy import EconomyBackend
+from db.birthdays import BirthdayBackend
 
 
 class Stuff(commands.Cog):  # create a class for our cog that inherits from commands.Cog
@@ -12,8 +13,6 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
 
     def __init__(self, bot):  # this is a special method that is called when the cog is loaded
         self.bot: discord.Bot = bot
-        self.db = Database()
-        self.bot.loop.create_task(self.db.init_db())
         self.check_birthdays.start()
         self.remove_birthday_role.start()
 
@@ -29,7 +28,7 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
         await discord.utils.sleep_until(target_datetime)
 
         today = target_datetime.date()
-        users_with_birthday = await self.db.get_users_with_birthday(today.day, today.month)
+        users_with_birthday = await BirthdayBackend().get_users_with_birthday(today.day, today.month)
         for user in users_with_birthday:
             guild: discord.Guild = self.bot.get_guild(user.guild_id)
             member = guild.get_member(user.user_id)
@@ -50,7 +49,7 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
     @tasks.loop(hours=24)
     async def remove_birthday_role(self):
         now = datetime.now()
-        target_time = time(1, 0)  # one hour offset because host is in a different timezone
+        target_time = time(0, 0)  # one hour offset because host is in a different timezone
         target_datetime = datetime.combine(now.date(), target_time)
 
         if now > target_datetime:
@@ -70,11 +69,11 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
 
     @birthdayCommandGroup.command(name="set", description="Set your birthday.",
                                   contexts={discord.InteractionContextType.guild})
-    @discord.option(name="day", description="The day of your birthday.", type=discord.SlashCommandOptionType.integer,
+    @discord.option(name="day", description="The day of your birthday as a number. (eg. 14)", type=discord.SlashCommandOptionType.integer,
                     required=True)
-    @discord.option(name="month", description="The month of your birthday.",
+    @discord.option(name="month", description="The month of your birthday as a number. (eg. 5 for May)",
                     type=discord.SlashCommandOptionType.integer, required=True)
-    @discord.option(name="year", description="The year of your birthday.", type=discord.SlashCommandOptionType.integer,
+    @discord.option(name="year", description="The year of your birthday as a number. (eg. 2000)", type=discord.SlashCommandOptionType.integer,
                     required=False)
     async def setBirthday(self, ctx, day: int, month: int, year: int = 1900):
         birthday = None
@@ -86,11 +85,11 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
         if birthday > date.today():
             return await ctx.respond("You can't set a birthday in the future.", ephemeral=True)
         try:
-            if await self.db.get_user_record(ctx.author.id, ctx.guild.id) is None:
-                await self.db.create_user_record(ctx.author.id, ctx.guild.id, birthday)
+            if not await BirthdayBackend().get_user_record(ctx.author.id, ctx.guild.id):
+                await BirthdayBackend().create_user_record(ctx.author.id, ctx.guild.id, birthday)
                 await ctx.respond("Birthday set!")
             else:
-                await self.db.edit_user_record(ctx.author.id, ctx.guild.id, birthday)
+                await BirthdayBackend().update_user_record(ctx.author.id, ctx.guild.id, birthday)
                 await ctx.respond("Birthday updated!")
         except Exception as e:
             await ctx.respond("An error occurred. Please try again later.", ephemeral=True)
@@ -100,7 +99,7 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
                                   contexts={discord.InteractionContextType.guild})
     async def deleteBirthday(self, ctx):
         try:
-            await self.db.delete_user_record(ctx.author.id, ctx.guild.id)
+            await BirthdayBackend().delete_user_record(ctx.author.id, ctx.guild.id)
             await ctx.respond("Birthday deleted!")
         except Exception as e:
             await ctx.respond("An error occurred. Please try again later.", ephemeral=True)
@@ -111,25 +110,33 @@ class Stuff(commands.Cog):  # create a class for our cog that inherits from comm
     @discord.option(name="user", description="The user whose birthday you want to view.",
                     type=discord.SlashCommandOptionType.user, required=False)
     async def viewBirthday(self, ctx: discord.InteractionContextType, user: discord.User = None):
-        birthday: date = None
         embed = discord.Embed()
         embed.color = discord.Color.blue()
         if user is None:
             user = ctx.author
-        embed.title = f"{user.global_name}'s Birthday"
-        embed.set_thumbnail(url=user.avatar.url)
+        if user.bot: return await ctx.respond("Bots don't have birthdays.")
+        if user.avatar: embed.set_thumbnail(url=user.avatar.url)
         try:
-            user_record = await self.db.get_user_record(user.id, ctx.guild.id)
-            if user_record is None:
+            user_record = await BirthdayBackend().get_user_record(user.id, ctx.guild.id)
+
+            if not user_record:  # Keine Daten gefunden
                 embed.description = "No birthday set."
+                pass
+            elif user_record.year == 1900:
+                birthday = date(user_record.year, user_record.month, user_record.day)
+                embed.add_field(name=f"{user.global_name}'s Birthday", value=f"{birthday.day}. {birthday.strftime('%B')}")
             else:
-                if user_record.year == 1900:
-                    embed.description = f"{user_record.day}.{user_record.month}."
-                else:
-                    embed.description = f"{user_record.day}.{user_record.month}.{user_record.year}"
+                birthday = date(user_record.year, user_record.month, user_record.day)
+                embed.add_field(name=f"{user.global_name}'s Birthday",
+                                value=f"{birthday.day}. {birthday.strftime('%B')} {birthday.year}")
+                age = date.today().year - birthday.year
+                if (date.today().month, date.today().day) < (birthday.month, birthday.day): age -= 1
+                embed.add_field(name="Age", value=f"{age} years")
         except Exception as e:
             embed.description = "An error occurred. Please try again later."
             print(e)
+        if user.color != discord.Color.default(): embed.color = user.color
+        else: embed.color = 0x1abc9c
         await ctx.respond(embed=embed)
 
     economyCommandGroup = discord.SlashCommandGroup(name="economy", description="A selection of economy commands.",

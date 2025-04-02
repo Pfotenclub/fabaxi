@@ -87,7 +87,7 @@ class UserKarma(Database):
 
             await session.commit()
 
-    async def handle_reaction_change(self, message_author, guild_id, emoji_id, is_addition: bool):
+    async def handle_reaction_change(message_author, guild_id, emoji_id, is_addition: bool):
         upvote_emoji = 1199472652721586298
         downvote_emoji = 1199472654185418752
 
@@ -102,14 +102,14 @@ class UserKarma(Database):
             elif emoji_id == downvote_emoji:
                 amount = -1 if is_addition else 1
 
-            user_karma = await self.get_user_karma(message_author.id, guild_id)
+            user_karma = await UserKarma().get_user_karma(message_author.id, guild_id)
 
             # Only adjust karma if it makes sense
             if amount < 0 and user_karma <= 0:
                 logging.debug(f"Attempted to reduce karma below 0 for User ID {message_author.id}")
                 return
 
-            await self.adjust_karma_for_user(message_author.id, guild_id, amount)
+            await UserKarma().adjust_karma_for_user(message_author.id, guild_id, amount)
             logging.info(
                 f"Karma {'added' if is_addition else 'removed'}: {amount} for User ID {message_author.id} in Guild ID {guild_id}")
         except Exception as e:
