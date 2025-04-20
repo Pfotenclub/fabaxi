@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import os
 import random
+from ext.system import default_embed
 
 class Fun(commands.Cog): # create a class for our cog that inherits from commands.Cog
     # this class is used to create a cog, which is a module that can be added to the bot
@@ -86,12 +87,11 @@ class Fun(commands.Cog): # create a class for our cog that inherits from command
             response = random.choice(funnyResponses)
         else:
             response = random.choice(responses)
-        embed = discord.Embed()
+        embed: discord.Embed = await default_embed(ctx.author)
         embed.title = "Magic 8ball"
         embed.set_thumbnail(url="https://cdn.pixabay.com/photo/2015/09/05/07/17/pool-ball-923833_960_720.png")
         embed.add_field(name="Question", value=question, inline=False)
         embed.add_field(name="Answer", value=response, inline=False)
-        embed.color = discord.Color.blue()
         await ctx.respond(embed=embed)
 
     @discord.slash_command(name="hug", description="Hug someone!", contexts={discord.InteractionContextType.guild})

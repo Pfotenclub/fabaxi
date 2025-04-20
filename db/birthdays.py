@@ -29,13 +29,9 @@ class BirthdayBackend(Database):
             await session.execute(
                 update(BirthdayTable).where(BirthdayTable.user_id == user_id, BirthdayTable.guild_id == guild_id).values(
                     day=birthday.day, month=birthday.month, year=birthday.year))
+            await session.commit()
             
     async def delete_user_record(self, user_id: int, guild_id: int):
         async with self.get_session() as session:
             await session.execute(delete(BirthdayTable).where(BirthdayTable.user_id == user_id, BirthdayTable.guild_id == guild_id))
             await session.commit()
-        
-    async def get_user_record(self, user_id: int, guild_id: int):
-        async with self.get_session() as session:
-            records = await session.execute(select(BirthdayTable))
-            return records.scalars().all()
