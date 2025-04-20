@@ -1,5 +1,6 @@
 import logging
 import os
+import random
 
 import discord
 from discord.ext import commands, tasks
@@ -27,6 +28,8 @@ else:
     bot = commands.Bot(command_prefix='!', debug_guilds=[os.getenv("DEV_SERVER")], intents=intents)
 ##########################################################################
 logging.basicConfig(level=logging.WARN, format='%(asctime)s %(message)s', handlers=[logging.StreamHandler()])
+
+
 ##########################################################################
 
 @bot.event
@@ -41,12 +44,14 @@ async def on_ready():
     await send_system_message(bot.user.avatar, "Fabaxi", "Bot is ready and online!")
     await change_status.start()
 
+
 @tasks.loop(hours=12)
 async def change_status():
-    new_status = await load_random_status()
+    new_status = random.choice(await load_random_status())
     logging.info(f"Current Status: {new_status}")
     await send_system_message(bot.user.avatar, "Fabaxi", f"Set new Status:\n**{new_status}**")
     await bot.change_presence(activity=discord.CustomActivity(name=new_status))
+
 
 if __name__ == '__main__':
     for i in ["commands", "events", "temp-voice"]:
