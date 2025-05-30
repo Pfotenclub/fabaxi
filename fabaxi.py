@@ -11,6 +11,7 @@ from ext.system import send_system_message
 load_dotenv()
 ##########################################################################
 intents = discord.Intents().default()
+# intents.members = True
 intents.message_content = True
 intents.guild_messages = True
 intents.messages = True
@@ -42,13 +43,13 @@ async def on_ready():
 
 @tasks.loop(hours=12)
 async def change_status():
-    new_status = load_random_status()
+    new_status = await load_random_status()
     logging.info(f"Current Status: {new_status}")
     await send_system_message(bot.user.avatar, "Fabaxi", f"Set new Status:\n**{new_status}**")
     await bot.change_presence(activity=discord.CustomActivity(name=new_status))
 
 if __name__ == '__main__':
-    for i in ["commands", "events", "temp-voice", "minigames"]:
+    for i in ["commands", "events", "temp-voice"]:
         if os.path.isdir(f"app/{i}"):
             for j in os.listdir(f"app/{i}"):
                 if j.endswith(".py"):
