@@ -117,10 +117,10 @@ class RenameChannel(discord.ui.Modal):  # Modal for renaming the channel
         if channel is not None:  # if the channel exists
             try:
                 if self.children[0].value:  # if the value is not empty
-                    await channel.edit(name=self.children[0].value)  # set the name to the value
+                    await channel.edit(name=f"🔊・{self.children[0].value}")  # set the name to the value
                 else:
                     await channel.edit(
-                        name=f"{interaction.user.display_name}'s Channel")  # set the name to the default name
+                        name=f"🔊・{interaction.user.display_name}'s Channel")  # set the name to the default name
 
                 embed: discord.Embed = await default_embed(interaction.user)
                 embed.title="Update successful!"  # set the title
