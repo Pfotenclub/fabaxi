@@ -1,6 +1,6 @@
 # Fabaxi
 
-Hi! I'm Fabaxi, you're Pfotenclub Companion 😊
+Hi! I'm Fabaxi, your Pfotenclub Companion 😊
 
 ## What do I do?
 
