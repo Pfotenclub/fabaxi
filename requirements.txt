@@ -11,7 +11,7 @@ click==8.1.8
 colorama==0.4.6
 dotenv==0.9.9
 greenlet==3.2.2
-frozenlist==1.6.0
+frozenlist==1.6.2
 idna==3.10
 joblib==1.5.1
 multidict==6.4.4
