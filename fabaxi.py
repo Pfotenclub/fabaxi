@@ -1,5 +1,6 @@
 import logging
 import os
+import random
 
 import discord
 from discord.ext import commands, tasks
@@ -7,6 +8,8 @@ from dotenv import load_dotenv
 
 from ext.cache import load_random_status
 from ext.system import send_system_message
+from db import Database
+
 
 load_dotenv()
 ##########################################################################
@@ -37,12 +40,14 @@ async def on_ready():
     print(bot.user.id)
     print('--------------------------------------')
     logging.info(f"{bot.user} is ready and online!")
+    await Database().init_db()
+    logging.info("Database initialized!")
     await send_system_message(bot.user.avatar, "Fabaxi", "Bot is ready and online!")
     await change_status.start()
 
-@tasks.loop(hours=12)
+@tasks.loop(minutes=2)
 async def change_status():
-    new_status = load_random_status()
+    new_status = random.choice(load_random_status())
     logging.info(f"Current Status: {new_status}")
     await send_system_message(bot.user.avatar, "Fabaxi", f"Set new Status:\n**{new_status}**")
     await bot.change_presence(activity=discord.CustomActivity(name=new_status))

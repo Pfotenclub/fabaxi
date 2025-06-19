@@ -75,3 +75,4 @@ class TempVoiceTable(Base):
         self.owner_id = owner_id
         self.channel_id = channel_id
         self.guild_id = guild_id
+
