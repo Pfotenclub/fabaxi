@@ -1,4 +1,4 @@
-FROM python:3.12.8-slim-bookworm
+FROM python:3.13-slim-bookworm
 LABEL title="chatgpaint"
 LABEL authors="Wolfiii, Nicked"
 LABEL version="1.0.0"
