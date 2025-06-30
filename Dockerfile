@@ -7,6 +7,7 @@ COPY . /bot
 
 WORKDIR /bot
 
+RUN apt-get update && apt-get install -y git
 RUN pip install -r requirements.txt
 ENV DOCKER=true
 ENV STATUS_UPDATE_PORT=7958
