@@ -1,8 +1,28 @@
 from time import time
 
-from sqlalchemy import Column, Integer, BigInteger
+from sqlalchemy import Column, Integer, BigInteger, String
 
 from db import Base
+
+
+class ReactionRoleTable(Base):
+    __tablename__ = 'reaction_role'
+    role_id = Column(BigInteger, primary_key=True)
+    guild_id = Column(BigInteger, primary_key=True)
+    role_color_hex = Column(String(50), nullable=True)
+    role_emote_id = Column(BigInteger, nullable=True)
+
+    def __init__(self, role_id, guild_id, role_name, role_color, role_emote):
+        super().__init__()
+        self.role_id = role_id
+        self.guild_id = guild_id
+        self.role_name = role_name
+        self.role_color = role_color
+        self.role_emote = role_emote
+
+    def dump(self):
+        return dict([(k, v) for k, v in vars(self).items() if not k.startswith('_')])
+
 
 class BirthdayTable(Base):
     __tablename__ = "birthdays"
@@ -19,7 +39,11 @@ class BirthdayTable(Base):
         self.day = day
         self.month = month
         self.year = year
-    
+
+    def dump(self):
+        return dict([(k, v) for k, v in vars(self).items() if not k.startswith('_')])
+
+
 class EconomyTable(Base):
     __tablename__ = "economy"
     user_id = Column(BigInteger, primary_key=True)
@@ -31,6 +55,10 @@ class EconomyTable(Base):
         self.user_id = user_id
         self.guild_id = guild_id
         self.balance = balance
+
+    def dump(self):
+        return dict([(k, v) for k, v in vars(self).items() if not k.startswith('_')])
+
 
 class KarmaTable(Base):
     __tablename__ = 'karma'
@@ -49,6 +77,7 @@ class KarmaTable(Base):
     def dump(self):
         return dict([(k, v) for k, v in vars(self).items() if not k.startswith('_')])
 
+
 class RewardsTable(Base):
     __tablename__ = "rewards"
     role_id = Column(BigInteger, primary_key=True)
@@ -63,7 +92,8 @@ class RewardsTable(Base):
 
     def dump(self):
         return dict([(k, v) for k, v in vars(self).items() if not k.startswith('_')])
-    
+
+
 class TempVoiceTable(Base):
     __tablename__ = "temp_voice"
     owner_id = Column(BigInteger)
@@ -75,4 +105,3 @@ class TempVoiceTable(Base):
         self.owner_id = owner_id
         self.channel_id = channel_id
         self.guild_id = guild_id
-

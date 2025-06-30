@@ -45,7 +45,7 @@ async def on_ready():
     await send_system_message(bot.user.avatar, "Fabaxi", "Bot is ready and online!")
     await change_status.start()
 
-@tasks.loop(minutes=2)
+@tasks.loop(hours=12)
 async def change_status():
     new_status = random.choice(load_random_status())
     logging.info(f"Current Status: {new_status}")
@@ -53,7 +53,7 @@ async def change_status():
     await bot.change_presence(activity=discord.CustomActivity(name=new_status))
 
 if __name__ == '__main__':
-    for i in ["commands", "events", "temp-voice", "minigames"]:
+    for i in ["commands", "events", "temp-voice", "minigames", "admin_commands"]:
         if os.path.isdir(f"app/{i}"):
             for j in os.listdir(f"app/{i}"):
                 if j.endswith(".py"):

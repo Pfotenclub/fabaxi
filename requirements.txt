@@ -1,4 +1,4 @@
-py-cord==2.6.1
+git+https://github.com/Pycord-Development/pycord.git
 audioop_lts==0.2.1
 dotenv==0.9.9
 requests==2.32.4
