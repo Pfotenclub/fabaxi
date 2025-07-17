@@ -56,5 +56,6 @@ jobs:
             -e PROD_SERVER=${{ secrets.PROD_SERVER }} \
             -e PROD_TOKEN=${{ secrets.PROD_TOKEN }} \
             -e WEBHOOK_URL=${{ secrets.WEBHOOK_URL }} \
+            -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
             -v /home/chatgpaint/db:/db \
             --name ${{ secrets.DOCKER_IMAGE_NAME }} ${{ secrets.DOCKER_IMAGE_NAME }}
