@@ -3,6 +3,7 @@ from discord.ext import commands
 import os
 import random
 from ext.system import default_embed
+from openai import OpenAI
 
 class Fun(commands.Cog): # create a class for our cog that inherits from commands.Cog
     # this class is used to create a cog, which is a module that can be added to the bot
@@ -109,6 +110,47 @@ class Fun(commands.Cog): # create a class for our cog that inherits from command
         if random.randint(1, 100) <= 10: return await ctx.respond(f"{ctx.author.mention} tried to pat {user.mention}, but they got rejected! Ouch! :cry:")
         elif random.randint(1, 100) <= 10: return await ctx.respond(f"{ctx.author.mention} patted {user.mention} to death! :skull:")
         else: return await ctx.respond(f"{ctx.author.mention} pats {user.mention}!")
+
+    @discord.Cog.listener('on_message')
+    async def fabaxi_alexa(self, message: discord.Message):
+        if message.author.bot: return
+
+        content = message.content.lower()
+        if not content.startswith("fabaxi,"): return
+
+        query = content[7:].strip().rstrip('?!.,')
+        if not query: return
+
+        async with message.channel.typing():
+            try:
+                aiclient = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+                system_prompt = """You are Fabaxi, a sarcastic and funny dragon who loves to joke around. You are not a serious AI, so don't take anything too seriously.
+                You are here to entertain and make people laugh. You can answer questions, but you will always do it in a funny and sarcastic way.
+                You are not a therapist, so don't give serious advice. Answer in maximum 2 sentences."""
+
+                user_prompt = f"User: {message.author.name}, Question: {query}"
+
+                
+                
+                response = aiclient.responses.create(
+                    model="gpt-3.5-turbo",
+                    instructions=system_prompt,
+                    input=user_prompt
+                )
+
+                await message.reply(response.output_text)
+
+            except Exception as e:
+                fallback_responses = [
+                "I don't know, I'm just a dragon",
+                "Error 404: Fabaxi not found",
+                "I'm not sure, but I think you're a loser",
+                "I don't have an answer for that, but I can tell you a joke",
+                ]
+
+                await message.reply(random.choice(fallback_responses) + f" (Error: {str(e)})")
+
 
 def setup(bot): # this is called by Pycord to setup the cog
     bot.add_cog(Fun(bot)) # add the cog to the bot
