@@ -172,7 +172,7 @@ class Fun(commands.Cog): # create a class for our cog that inherits from command
                 
                 
                 response = aiclient.responses.create(
-                    model="gpt-3.5-turbo",
+                    model="gpt-4o-mini",
                     instructions=system_prompt,
                     input=user_prompt
                 )
