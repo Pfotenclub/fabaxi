@@ -138,6 +138,33 @@ class Stuff(commands.Cog):
         else: embed.color = 0x1abc9c
         await ctx.respond(embed=embed)
 
+    @birthdayCommandGroup.command(name="list", description="List all birthdays in the server.",
+                                  contexts={discord.InteractionContextType.guild})
+    async def listBirthdays(self, ctx):
+        embed: discord.Embed = await default_embed(user=ctx.author)
+        embed.title = "Birthdays in this server"
+
+        try:
+            birthdays = await BirthdayBackend().get_all_birthdays(ctx.guild.id)
+            if not birthdays:
+                embed.description = "No birthdays set in this server."
+            else:
+                for birthday in birthdays:
+                    user = ctx.guild.get_member(birthday.user_id)
+                    if user:
+                        birthday_date = date(birthday.year, birthday.month, birthday.day)
+                        if birthday.year == 1900:
+                            embed.add_field(name=f"{user.display_name}'s Birthday",
+                                            value=f"{birthday_date.day}. {birthday_date.strftime('%B')}", inline=False)
+                        else:
+                            embed.add_field(name=f"{user.display_name}'s Birthday",
+                                            value=f"{birthday_date.day}. {birthday_date.strftime('%B')} {birthday_date.year}",
+                                            inline=False)
+        except Exception as e:
+            embed.description = "An error occurred while fetching birthdays. Please try again later."
+            print(e)
+        await ctx.respond(embed=embed)
+
     economyCommandGroup = discord.SlashCommandGroup(name="economy", description="A selection of economy commands.",
                                         contexts={discord.InteractionContextType.guild})
     @economyCommandGroup.command(name="balance", description="View your balance.",
