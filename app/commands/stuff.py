@@ -113,7 +113,7 @@ class Stuff(commands.Cog):
             user = ctx.author
         if user.bot: return await ctx.respond("Bots don't have birthdays.")
         embed: discord.Embed = await default_embed(user=user)
-        embed.title = f"{user.global_name}'s Birthday"
+        embed.title = f"{user.display_name}'s Birthday"
         if user.avatar: embed.set_thumbnail(url=user.avatar.url)
         try:
             user_record = await BirthdayBackend().get_user_record(user.id, ctx.guild.id)
