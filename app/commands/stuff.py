@@ -123,10 +123,10 @@ class Stuff(commands.Cog):
                 pass
             elif user_record.year == 1900:
                 birthday = date(user_record.year, user_record.month, user_record.day)
-                embed.add_field(name=f"{user.global_name}'s Birthday", value=f"{birthday.day}. {birthday.strftime('%B')}")
+                embed.add_field(name=f"{user.display_name}'s Birthday", value=f"{birthday.day}. {birthday.strftime('%B')}")
             else:
                 birthday = date(user_record.year, user_record.month, user_record.day)
-                embed.add_field(name=f"{user.global_name}'s Birthday",
+                embed.add_field(name=f"{user.display_name}'s Birthday",
                                 value=f"{birthday.day}. {birthday.strftime('%B')} {birthday.year}")
                 age = date.today().year - birthday.year
                 if (date.today().month, date.today().day) < (birthday.month, birthday.day): age -= 1
