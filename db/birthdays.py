@@ -8,6 +8,30 @@ from db.tables import BirthdayTable
 
 class BirthdayBackend(Database):
 
+    async def get_all_birthdays(self, guild_id: int):
+        async with self.get_session() as session:
+            records = await session.execute(
+                select(BirthdayTable)
+                .where(BirthdayTable.guild_id == guild_id)
+            )
+            birthdays = records.scalars().all()
+            today = date.today()
+
+            def days_until_next_birthday(birthday_record):
+                try:
+                    this_year_birthday = date(today.year, birthday_record.month, birthday_record.day)
+
+                    if this_year_birthday >= today:
+                        return (this_year_birthday - today).days
+                    else:
+                        next_year_birthday = date(today.year + 1, birthday_record.month, birthday_record.day)
+                        return (next_year_birthday - today).days
+                except ValueError:
+                    return 365
+                except Exception as e:
+                    print(e)
+            return sorted(birthdays, key=days_until_next_birthday)
+
     async def get_users_with_birthday(self, day: int, month: int):
         async with self.get_session() as session:
             records = await session.execute(
