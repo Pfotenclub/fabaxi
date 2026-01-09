@@ -4,6 +4,7 @@ import os
 import random
 from ext.system import default_embed
 from openai import OpenAI
+import requests
 
 class Fun(commands.Cog): # create a class for our cog that inherits from commands.Cog
     # this class is used to create a cog, which is a module that can be added to the bot
@@ -88,6 +89,13 @@ class Fun(commands.Cog): # create a class for our cog that inherits from command
             response = random.choice(funnyResponses)
         else:
             response = random.choice(responses)
+
+        if response == "No" and random.randint(1, 100) <= 20:
+            naas = requests.get("https://naas.isalman.dev/no")
+            naasjson = naas.json()
+            response = naasjson['reason']
+
+
         embed: discord.Embed = await default_embed(ctx.author)
         embed.title = "Magic 8ball"
         embed.set_thumbnail(url="https://cdn.pixabay.com/photo/2015/09/05/07/17/pool-ball-923833_960_720.png")
