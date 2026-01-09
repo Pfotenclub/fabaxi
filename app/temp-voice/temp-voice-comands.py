@@ -185,7 +185,7 @@ class ClaimChannel(CooldownSetter):
                                                              interaction.user.id)  # change the channel owner id
 
         await interaction.user.voice.channel.edit(
-            name=f"{interaction.user.display_name}'s Channel")  # set the name of the channel to the member's name
+            name=f"🔊・{interaction.user.display_name}'s Channel")  # set the name of the channel to the member's name
 
         embed: discord.Embed = await default_embed(interaction.user)
         embed.title="Temporary voice channel claimed!"  # set the title
