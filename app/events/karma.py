@@ -7,6 +7,8 @@ from sqlalchemy import select
 from db.tables import RewardsTable
 from db.user_karma import UserKarma
 
+from ext.system import default_embed
+
 class Karma(commands.Cog):
     logging.basicConfig(level=logging.ERROR, format='%(asctime)s %(message)s', handlers=[logging.StreamHandler()])
 
@@ -118,7 +120,8 @@ class Karma(commands.Cog):
     async def leaderboard(self, ctx):
         """Displays the leaderboard for the server."""
         await ctx.defer()
-        embed = discord.Embed(title="Karma Leaderboard", color=discord.Color.blurple())
+        embed = default_embed(user=ctx.author, fact=True)
+        embed.title = "Karma Leaderboard"
         top_users = await UserKarma().get_karma_leaderboard(ctx.guild.id, 10)
 
         if not top_users:
