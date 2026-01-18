@@ -43,23 +43,6 @@ class BirthdayTable(Base):
     def dump(self):
         return dict([(k, v) for k, v in vars(self).items() if not k.startswith('_')])
 
-
-class EconomyTable(Base):
-    __tablename__ = "economy"
-    user_id = Column(BigInteger, primary_key=True)
-    guild_id = Column(BigInteger, primary_key=True)
-    balance = Column(Integer, default=0)
-
-    def __init__(self, user_id, guild_id, balance):
-        super().__init__()
-        self.user_id = user_id
-        self.guild_id = guild_id
-        self.balance = balance
-
-    def dump(self):
-        return dict([(k, v) for k, v in vars(self).items() if not k.startswith('_')])
-
-
 class KarmaTable(Base):
     __tablename__ = 'karma'
     user_id = Column(BigInteger, primary_key=True)

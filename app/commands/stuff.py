@@ -165,37 +165,5 @@ class Stuff(commands.Cog):
             print(e)
         await ctx.respond(embed=embed)
 
-    economyCommandGroup = discord.SlashCommandGroup(name="economy", description="A selection of economy commands.",
-                                        contexts={discord.InteractionContextType.guild})
-    @economyCommandGroup.command(name="balance", description="View your balance.",
-                                  contexts={discord.InteractionContextType.guild})
-    @discord.option(name="user", description="The user whose balance you want to view.",
-                    type=discord.SlashCommandOptionType.user, required=False)
-    async def balance(self, ctx, user: discord.User = None):
-        try:
-            balance = await EconomyBackend().get_balance(ctx.author.id, ctx.guild.id)
-            if balance is None:
-                balance = 0
-            await ctx.respond(f"Your balance is {balance}.")
-        except Exception as e:
-            await ctx.respond("An error occurred. Please try again later.", ephemeral=True)
-            print(e)
-    
-    @economyCommandGroup.command(name="set", description="Give someone money.",
-                                  contexts={discord.InteractionContextType.guild})
-    @discord.option(name="user", description="The user you want to give money to.",
-                    type=discord.SlashCommandOptionType.user, required=True)
-    @discord.option(name="amount", description="The amount of money you want to set.",
-                    type=discord.SlashCommandOptionType.integer, required=True)
-    async def give(self, ctx, user: discord.User, amount: int):
-        if amount <= 0:
-            return await ctx.respond("You can't give a negative amount of money.", ephemeral=True)
-        try:
-            await EconomyBackend().set_balance(user.id, ctx.guild.id, amount)
-            await ctx.respond(f"{amount} coins given to {user.name}.", ephemeral=True)
-        except Exception as e:
-            await ctx.respond("An error occurred. Please try again later.", ephemeral=True)
-            print(e)
-
 def setup(bot):  # this is called by Pycord to setup the cog
     bot.add_cog(Stuff(bot))  # add the cog to the bot
