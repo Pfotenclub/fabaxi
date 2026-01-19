@@ -2,7 +2,7 @@ import json
 import random
 from functools import lru_cache
 
-
+# Load status messages from a JSON file and cache the result for efficiency
 @lru_cache()
 def load_random_status():
     with open("etc/status.json", encoding="utf-8") as fp:
