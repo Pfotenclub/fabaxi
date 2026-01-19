@@ -53,17 +53,13 @@ class TempVoiceInterface(discord.ui.Button):  # Button for the Temp Voice Interf
         if cmdId == 4:
             await ClaimChannel().callback(interaction)
 
-        if userChannel.category_id != joinToCreateParent: return await interaction.response.send_message(
-            "You must be in a temporary voice channel to use this command!", ephemeral=True)
+        if userChannel.category_id != joinToCreateParent: return await interaction.response.send_message( "You must be in a temporary voice channel to use this command!", ephemeral=True)
 
         noChannelOwnerText = "You must be the channel owner to use this command!"
-        if not await memberIsChannelOwner(userChannel.id,
-                                          interaction.user.id):  # if the member is not the channel owner
-            return await interaction.response.send_message(noChannelOwnerText,
-                                                           ephemeral=True)  # send a message that the member does not have a temporary voice channel
+        if not await memberIsChannelOwner(userChannel.id, interaction.user.id):  # if the member is not the channel owner
+            return await interaction.response.send_message(noChannelOwnerText, ephemeral=True)  # send a message that the member does not have a temporary voice channel
         if cmdId == 0:  # if the command id is 0
-            await interaction.response.send_modal(
-                RenameChannel(title="Rename your voice channel"))  # send the rename channel modal
+            await interaction.response.send_modal(RenameChannel(title="Rename your voice channel"))  # send the rename channel modal
         elif cmdId == 1:  # if the command id is 1
             await interaction.response.send_modal(LimitChannel(title="Set Userlimit"))  # send the limit channel modal
         elif cmdId == 2:  # if the command id is 2
@@ -75,7 +71,7 @@ class TempVoiceInterface(discord.ui.Button):  # Button for the Temp Voice Interf
 class TempVoiceCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
+    # Command to create and send the temp voice interface
     @commands.command(name="temp-voice-interface")
     @commands.is_owner()
     async def tempVoiceInterface(self, ctx: discord.ApplicationContext): # when the command is called
@@ -92,7 +88,7 @@ class TempVoiceCog(commands.Cog):
         for cmdId in tempVoiceCmdIds:  # for every command id
             view.add_item(TempVoiceInterface(cmdId))  # add the button to the view
         await ctx.send(embed=embed, view=view)  # send the embed with the view
-        await ctx.respond("Message sent!", ephemeral=True)  # send a message that the message was sent
+        await ctx.message.delete()
 
     @commands.Cog.listener()  # when the bot is ready
     async def on_ready(self):  # when the bot is ready
@@ -163,7 +159,7 @@ class LimitChannel(discord.ui.Modal):  # Modal for setting the user limit
         await interaction.response.send_message(embeds=[embed], ephemeral=True)  # send the embed
 
 
-class ClaimChannel(CooldownSetter):
+class ClaimChannel(CooldownSetter): # Modal for claiming the channel
 
     async def callback(self, interaction: discord.Interaction):  # when the command is called
         if self.i_did_smth_too_fast(interaction.user):
@@ -171,21 +167,15 @@ class ClaimChannel(CooldownSetter):
         else:
             userChannel = interaction.user.voice.channel
             if await memberIsChannelOwner(userChannel.id, interaction.user.id):  # if the member is the channel owner
-                return await interaction.response.send_message("You already have a temporary voice channel!",
-                                                               ephemeral=True)  # send a message that the member already has a temporary voice channel
+                return await interaction.response.send_message("You already have a temporary voice channel!", ephemeral=True)  # send a message that the member already has a temporary voice channel
 
-            for member in interaction.user.voice.channel.members:  # for every member in the channel
-                if member.id == await TempVoiceBackend().get_owner_id(
-                        userChannel.id):  # if the member id is the same as the member id
-                    return await interaction.response.send_message(
-                        "The channel owner is already in the temporary voice channel!",
-                        ephemeral=True)  # send a message that the channel owner is already in the channel
+            for member in interaction.user.voice.channel.members:
+                if member.id == await TempVoiceBackend().get_owner_id(userChannel.id):  # if the member id is the same as the member id as the channel owner id
+                    return await interaction.response.send_message("The channel owner is already in the temporary voice channel!", ephemeral=True)
 
-            await TempVoiceBackend().change_channel_owner_id(userChannel.id,
-                                                             interaction.user.id)  # change the channel owner id
+            await TempVoiceBackend().change_channel_owner_id(userChannel.id, interaction.user.id)  # change the channel owner id
 
-        await interaction.user.voice.channel.edit(
-            name=f"🔊・{interaction.user.display_name}'s Channel")  # set the name of the channel to the member's name
+        await interaction.user.voice.channel.edit(name=f"🔊・{interaction.user.display_name}'s Channel")  # set the name of the channel to the member's name
 
         embed: discord.Embed = await default_embed(interaction.user)
         embed.title="Temporary voice channel claimed!"  # set the title
@@ -194,15 +184,14 @@ class ClaimChannel(CooldownSetter):
         await interaction.respond(embed=embed, ephemeral=True)  # send the embed
 
 
-class LockChannel(CooldownSetter):
+class LockChannel(CooldownSetter): # Modal for locking the channel
 
     async def callback(self, interaction: discord.Interaction):  # when the command is called
         if self.i_did_smth_too_fast(interaction.user):
             await interaction.response.send_message("You are doing this too fast!", ephemeral=True)
         else:
             channel = interaction.user.voice.channel  # get the channel
-            permissions = {interaction.guild.default_role: discord.PermissionOverwrite(connect=False),
-                interaction.user: discord.PermissionOverwrite(connect=True)}
+            permissions = {interaction.guild.default_role: discord.PermissionOverwrite(connect=False), interaction.user: discord.PermissionOverwrite(connect=True)}
             await channel.edit(overwrites=permissions)  # set the permissions
             embed: discord.Embed = await default_embed(interaction.user)
             embed.title="Update successful!",  # set the title
@@ -211,7 +200,7 @@ class LockChannel(CooldownSetter):
             await interaction.response.send_message(embed=embed, ephemeral=True)  # send the embed
 
 
-class UnlockChannel(CooldownSetter):  # when the command is called
+class UnlockChannel(CooldownSetter):  # Modal for unlocking the channel
 
     async def callback(self, interaction: discord.Interaction):  # when the command is called
         if self.i_did_smth_too_fast(interaction.user):
@@ -230,7 +219,7 @@ class UnlockChannel(CooldownSetter):  # when the command is called
 def setup(bot):
     bot.add_cog(TempVoiceCog(bot))
 
-
+# Just a helper function to check if a member is the owner of a temp voice channel
 async def memberIsChannelOwner(channel_id, member_id):
     if await TempVoiceBackend().get_owner_id(channel_id=channel_id) == member_id:
         return True
