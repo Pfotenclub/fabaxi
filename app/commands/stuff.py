@@ -67,7 +67,8 @@ class Stuff(commands.Cog):
 ##############################################################
     birthdayCommandGroup = discord.SlashCommandGroup(name="birthday", description="A selection of birthday commands.", contexts={discord.InteractionContextType.guild})
 
-    @birthdayCommandGroup.command(name="set", description="Set your birthday.",escription="The day of your birthday as a number. (eg. 14)", type=discord.SlashCommandOptionType.integer, required=True)
+    @birthdayCommandGroup.command(name="set", description="Set your birthday.", contexts={discord.InteractionContextType.guild})
+    @discord.option(name="day", description="The day of your birthday as a number. (eg. 14)", type=discord.SlashCommandOptionType.integer, required=True)
     @discord.option(name="month", description="The month of your birthday as a number. (eg. 5 for May)", type=discord.SlashCommandOptionType.integer, required=True)
     @discord.option(name="year", description="The year of your birthday as a number. (eg. 2000)", type=discord.SlashCommandOptionType.integer, required=False)
     async def setBirthday(self, ctx, day: int, month: int, year: int = 1900):
