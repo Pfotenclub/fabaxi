@@ -66,7 +66,7 @@ def setup(bot):  # this is called by Pycord to setup the cog
 # helper functions for creating and deleting temp voice channels
 async def createTempVoice(bot, joinToCreateParent, member):
     category = bot.get_channel(joinToCreateParent)  # get the category
-    channel = await category.create_voice_channel(f"🔊・{member.display_name}'s Channel", user_limit=10)  # create the channel with 5 slots
+    channel = await category.create_voice_channel(f"🔊・{member.display_name}'s Channel", user_limit=10)  # create the channel with 10 slots
     await TempVoiceBackend().create_temp_voice(member.id, channel.id, member.guild.id)  # save the channel id to the database
     await member.move_to(channel)  # move the member to the channel
     return channel
