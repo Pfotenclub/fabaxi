@@ -14,7 +14,7 @@ class NightclubInterface(discord.ui.Button):
         
         await interaction.response.send_modal(NightclubAgeVerification(title="Age Verification"))
         
-
+# The Nightclub only is a form for users to put their age in. If they are 18 or older, they will be sent to the staff for approval because we hate efficiency.
 class Nightclub(commands.Cog): # create a class for our cog that inherits from commands.Cog
     # this class is used to create a cog, which is a module that can be added to the bot
 
@@ -22,9 +22,7 @@ class Nightclub(commands.Cog): # create a class for our cog that inherits from c
         self.bot = bot
     @commands.command(name="nightclub")
     @commands.is_owner()
-    async def nightclub(self, ctx):
-        if ctx.author.id != 327880195476422656:
-            return await ctx.respond("This command is not available for you!", ephemeral=True)
+    async def nightclub(self, ctx: commands.Context):
         view = discord.ui.View(timeout=None)
         view.add_item(NightclubInterface())
 
@@ -34,7 +32,8 @@ class Nightclub(commands.Cog): # create a class for our cog that inherits from c
             color=discord.Color.blurple()
             )
         await ctx.send(embed=embed, view=view)
-
+        await ctx.message.delete()
+        
     @commands.Cog.listener()
     async def on_ready(self):
         view = discord.ui.View(timeout=None)

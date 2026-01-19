@@ -21,7 +21,8 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
 
     def __init__(self, bot): # this is a special method that is called when the cog is loaded
         self.bot = bot
-
+##########################################################################
+# Commands to Control the Guess The Number Minigame
     @commands.command(name="guessthenumber")
     @commands.is_owner()
     async def guessTheNumber(self, ctx: commands.Context):
@@ -41,9 +42,11 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             guessJson["guesses"] = {}
             with open(os.path.join(data_path, "guessthenumber.json"), "w") as file: json.dump(guessJson, file)
             await ctx.send("Guess The Number has started! Try to guess the number between 1 and 100!")
-        elif guessJson["status"] == "running": await ctx.send("Guess The Number is already running! To stop it, please use the command `!stopguessthenumber`.")
-    
-    
+            await ctx.message.delete()
+        elif guessJson["status"] == "running":
+            await ctx.send("Guess The Number is already running! To stop it, please use the command `!stopguessthenumber`.")
+            await ctx.message.delete()
+
     @commands.command(name="stopguessthenumber")
     @commands.is_owner()
     async def stopGuessTheNumber(self, ctx: commands.Context):
@@ -63,7 +66,9 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             guessJson["guesses"] = {}
             with open(os.path.join(data_path, "guessthenumber.json"), "w") as file: json.dump(guessJson, file)
             await ctx.send("Guess The Number has been stopped. To start it again, please use the command `!guessthenumber`.")
-    
+            await ctx.message.delete()
+##########################################################################
+# The Guess The Number Minigame Logic
     async def guessTheNumberGame(self, message):
         if message.author.bot: return
         gtnChannel = None
@@ -150,7 +155,7 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
                 await message.channel.send("A new round has started! Try to guess the new number between `1` and `100`!")
             with open(os.path.join(data_path, "guessthenumber.json"), "w") as file: json.dump(guessJson, file)
 ##########################################################################
-    # Command to Control the Counting Minigame
+# Commands to Control the Counting Minigame
     @commands.command(name="counting")
     @commands.is_owner()
     async def startCounting(self, ctx: commands.Context):
@@ -167,8 +172,13 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             countJson["count"] = 0
             with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
             await ctx.send("Counting will start soon... Please type `1` to start counting!")
-        elif countJson["status"] == "running": await ctx.send(f"The current count is {countJson['count']}. To stop counting, please use the command `!stopcounting`.")
-        elif countJson["status"] == "starting": await ctx.send("Counting is about to start! Please type `1` to start counting!")
+            await ctx.message.delete()
+        elif countJson["status"] == "running":
+            await ctx.send(f"The current count is {countJson['count']}. To stop counting, please use the command `!stopcounting`.")
+            await ctx.message.delete()
+        elif countJson["status"] == "starting":
+            await ctx.send("Counting is about to start! Please type `1` to start counting!")
+            await ctx.message.delete()
     
     @commands.command(name="stopcounting")
     @commands.is_owner()
@@ -183,13 +193,16 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
 
         if countJson["status"] == "stopped":
             await ctx.send("Counting is already stopped.")
+            await ctx.message.delete()
         else:
             countJson["status"] = "stopped"
             countJson["count"] = 0
             countJson["lastAuthor"] = None
             with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
             await ctx.send("Counting has been stopped. To start counting again, please use the command `!counting`.")
-    
+            await ctx.message.delete()
+##########################################################################
+# The Counting Minigame Logic
     async def countingGame(self, message):
         if message.author.bot: return
         countChannel = None

@@ -53,6 +53,7 @@ async def change_status():
     await bot.change_presence(activity=discord.CustomActivity(name=new_status))
 
 if __name__ == '__main__':
+    # Command Handler
     for i in ["commands", "events", "temp-voice", "minigames", "admin_commands"]:
         if os.path.isdir(f"app/{i}"):
             for j in os.listdir(f"app/{i}"):
@@ -64,4 +65,5 @@ if __name__ == '__main__':
                     else:
                         logging.error(f"{j} was loaded correctly")
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    
     bot.run(TOKEN)

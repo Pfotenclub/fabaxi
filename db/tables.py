@@ -4,26 +4,6 @@ from sqlalchemy import Column, Integer, BigInteger, String
 
 from db import Base
 
-
-class ReactionRoleTable(Base):
-    __tablename__ = 'reaction_role'
-    role_id = Column(BigInteger, primary_key=True)
-    guild_id = Column(BigInteger, primary_key=True)
-    role_color_hex = Column(String(50), nullable=True)
-    role_emote_id = Column(BigInteger, nullable=True)
-
-    def __init__(self, role_id, guild_id, role_name, role_color, role_emote):
-        super().__init__()
-        self.role_id = role_id
-        self.guild_id = guild_id
-        self.role_name = role_name
-        self.role_color = role_color
-        self.role_emote = role_emote
-
-    def dump(self):
-        return dict([(k, v) for k, v in vars(self).items() if not k.startswith('_')])
-
-
 class BirthdayTable(Base):
     __tablename__ = "birthdays"
     user_id = Column(BigInteger, primary_key=True)
