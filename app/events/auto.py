@@ -15,7 +15,7 @@ class AutoCommands(commands.Cog):
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
             await ctx.send("You are not authorized to use this command.")
-            send_system_message(
+            await send_system_message(
                 picture_url=self.bot.user.avatar,
                 username=self.bot.user.name,
                 content=f"Unauthorized access attempt by {ctx.author} ({ctx.author.id}) ({ctx.guild.id}) for command `{ctx.command}`.",
@@ -23,7 +23,7 @@ class AutoCommands(commands.Cog):
         else:
             self.counter = + 1
             # channel = self.bot.get_channel(data["error"])
-            send_system_message(
+            await send_system_message(
                 picture_url=self.bot.user.avatar,
                 username=self.bot.user.name,
                 content=f"Error report Nr. {self.counter} after reset.\nServer: {ctx.message.guild}\nCommand: {ctx.message.content}\nError: {error}",
@@ -51,7 +51,7 @@ class AutoCommands(commands.Cog):
             await ctx.respond("You are not authorized to use this command.")
         else:
             self.counter = + 1
-            send_system_message(
+            await send_system_message(
                 picture_url=self.bot.user.avatar,
                 username=self.bot.user.name,
                 content=f"Error report Nr. {self.counter} after reset.\nServer: {ctx.guild}\nCommand: {ctx.command.name}\nError: {error}",
