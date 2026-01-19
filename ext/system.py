@@ -17,7 +17,7 @@ async def send_system_message(picture_url, username: str, content: str, alert: b
             webhook = Webhook.from_url(os.getenv('WEBHOOK_URL'), session=session)
             if alert: await webhook.send(embed=embed, username=username, content="<@!327880195476422656> <@!474947907913515019>")
             else: await webhook.send(embed=embed, username=username)
-# default embed generator for commands which sets the users color and adds a random fact to the footer (if fact=True)
+# default embed generator for commands which sets the user's color and adds a random fact to the footer (if fact=True)
 async def default_embed(user: discord.User, fact: bool = True):
     embed = discord.Embed()
     if user.color != discord.Color.default():
