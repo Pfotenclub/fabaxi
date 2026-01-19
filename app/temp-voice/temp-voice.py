@@ -46,7 +46,7 @@ class TempVoice(commands.Cog):  # create a class for our cog that inherits from 
                     await createTempVoice(self.bot, joinToCreateParent, member)  # create a temporary voice channel for the member
             elif before.channel.category_id == joinToCreateParent and after.channel.category_id != joinToCreateParent: # if member moved from a temp channel to a normal channel
                 if before.channel.id == joinToCreateVoice: # if member moved from the joinToCreateVoice channel
-                    return  # do nothing - joinToCreateVoice is not a temp channel, and also to make sure it doesnt get deleted lol
+                    return  # do nothing - joinToCreateVoice is not a temp channel, and also to make sure it doesn't get deleted lol
                 elif len(before.channel.members) == 0: # if member was the last one in the channel
                     await deleteTempVoice(self.bot, before.channel.id)  # delete the temporary voice channel
             elif before.channel.category_id == joinToCreateParent and after.channel.category_id == joinToCreateParent: # if member moved from a temp channel to another temp channel
