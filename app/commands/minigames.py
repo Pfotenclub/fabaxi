@@ -75,7 +75,13 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
         with open(os.path.join(data_path, "guessthenumber.json"), "r") as file: guessJson = json.load(file)
 
         if guessJson["status"] == "stopped": return
-        if message.content.startswith("?") or message.content == "!guessthenumber" or message.content == "!stopguessthenumber": return
+        if message.content == "!guessthenumber" or message.content == "!stopguessthenumber": return
+
+        if message.content.startswith("?"):
+            if random.randint(1, 1000) == 1:
+                if random.randint(1, 100) <= 50: await message.channel.send("Psst... Want a hint? The number is between `1` and `100`!")
+                else: await message.channel.send("Psst... You know, I can still read your messages, right?")
+
 
         elif guessJson["status"] == "running":
             if "guesses" not in guessJson or not isinstance(guessJson["guesses"], dict):
@@ -92,6 +98,25 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
                 return await message.channel.send("That's not a number! Please guess a number between `1` and `100`.")
             
             guess = int(message.content)
+
+            if guess == 69: await message.channel.send("🤨")
+            elif guess == 621:
+                furrynumber = random.randint(1, 100)
+                if furrynumber < 10: await message.channel.send("When you already give us that number, you are now obliged to tell us your favorite e621 tags :) Come on! Don't be shy!")
+                elif furrynumber < 30: await message.channel.send("...Why?")
+                elif furrynumber < 40: await message.channel.send("I hate my life... And I don't even have one")
+                elif furrynumber < 50: await message.channel.send("Furries are people too... I guess")
+                elif furrynumber < 60: await message.channel.send("Ew, gross")
+                elif furrynumber < 70: await message.channel.send("I hate furries")
+                elif furrynumber < 80: await message.channel.send("Why couldn't I just become an accountant instead...")
+                elif furrynumber < 90: await message.channel.send("Just no.")
+                else: await message.channel.send("Furry!")
+            elif guess == 101: await message.channel.send("Quite the overachiever, aren't we?")
+            elif guess == 0: await message.channel.send("Going for the underdog strategy, I see.")
+            elif guess == 99: await message.channel.send("Quite an edger, aren't we?")
+            elif guess == 1: await message.channel.send("Starting at the very beginning, I see. Just like in life :)")
+            elif guess == 42: await message.channel.send("The ultimate answer to everything :3")
+            elif guess == 73: await message.channel.send("Ah, a fellow Big Bang Theory fan!")
 
             if guess < 1 or guess > 100:
                 await message.add_reaction("❌")
