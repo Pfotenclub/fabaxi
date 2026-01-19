@@ -21,7 +21,7 @@ class AutoCommands(commands.Cog):
                 content=f"Unauthorized access attempt by {ctx.author} ({ctx.author.id}) ({ctx.guild.id}) for command `{ctx.command}`.",
             )
         else:
-            self.counter = + 1
+            self.counter += 1
             # channel = self.bot.get_channel(data["error"])
             await send_system_message(
                 picture_url=self.bot.user.avatar,
@@ -50,7 +50,7 @@ class AutoCommands(commands.Cog):
         if str(error).startswith("The check functions"):
             await ctx.respond("You are not authorized to use this command.")
         else:
-            self.counter = + 1
+            self.counter += 1
             await send_system_message(
                 picture_url=self.bot.user.avatar,
                 username=self.bot.user.name,
