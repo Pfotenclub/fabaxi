@@ -28,7 +28,9 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
         gtnChannel = None
         if environment == "DEV": gtnChannel = 1462546129106501837
         elif environment == "PROD": gtnChannel = 1462546344064586031
-        if ctx.channel.id != gtnChannel: return await ctx.send("You can only start Guess The Number in the Guess The Number channel!")
+        if ctx.channel.id != gtnChannel:
+            await ctx.send("You can only start Guess The Number in the Guess The Number channel!")
+            return
 
         guessJson = None
         with open(os.path.join(data_path, "guessthenumber.json"), "r") as file: guessJson = json.load(file)
