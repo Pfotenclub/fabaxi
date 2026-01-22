@@ -14,14 +14,6 @@ class AdminCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-
-    @discord.slash_command(name="fuckoff")
-    @commands.is_owner()
-    async def fuckoff(self, ctx):
-
-        await ctx.respond("Shutting down the bot. Goodbye!")
-        await self.bot.close()
-
     @commands.command(name="role-colors")
     @commands.is_owner()
     async def roleColors(self, ctx: commands.context):
