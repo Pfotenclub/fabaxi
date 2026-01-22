@@ -42,14 +42,14 @@ async def on_ready():
     logging.info(f"{bot.user} is ready and online!")
     await Database().init_db()
     logging.info("Database initialized!")
-    await send_system_message(bot.user.avatar, "Fabaxi", "Bot is ready and online!")
+    await send_system_message(bot=bot, content="Bot is ready and online!")
     await change_status.start()
 
 @tasks.loop(hours=12)
 async def change_status():
     new_status = random.choice(load_random_status())
     logging.info(f"Current Status: {new_status}")
-    await send_system_message(bot.user.avatar, "Fabaxi", f"Set new Status:\n**{new_status}**")
+    await send_system_message(bot, f"Set new Status:\n**{new_status}**")
     await bot.change_presence(activity=discord.CustomActivity(name=new_status))
 
 if __name__ == '__main__':
