@@ -6,17 +6,20 @@ import discord
 from discord import Webhook
 
 # used to send a system message to a webhook into the channel fabaxi_systems
-async def send_system_message(picture_url, username: str, content: str, alert: bool = False):
+async def send_system_message(bot: discord.Bot, content: str, alert: bool = False):
     embed = discord.Embed(title="⚙️System Message⚙️", description=content, color=discord.Color.blue())
     embed.set_footer(text="This is a system message.")
     embed.timestamp = discord.utils.utcnow()
-    embed.set_thumbnail(url=picture_url)
+    embed.set_thumbnail(url=bot.user.avatar.url)
 
     async with aiohttp.ClientSession() as session:
         if os.getenv('WEBHOOK_URL'):
             webhook = Webhook.from_url(os.getenv('WEBHOOK_URL'), session=session)
-            if alert: await webhook.send(embed=embed, username=username, content="<@!327880195476422656> <@!474947907913515019>")
-            else: await webhook.send(embed=embed, username=username)
+            if alert:
+                embed.color = discord.Color.red()
+                embed.set_thumbnail(url="https://img.icons8.com/fluency/48/high-priority--v1.png")
+                await webhook.send(embed=embed, username=bot.user.name, content="<@!327880195476422656> <@!474947907913515019>")
+            else: await webhook.send(embed=embed, username=bot.user.name)
 # default embed generator for commands which sets the user's color and adds a random fact to the footer (if fact=True)
 async def default_embed(user: discord.User, fact: bool = True):
     embed = discord.Embed()
