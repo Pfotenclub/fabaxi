@@ -52,8 +52,9 @@ class GardenCommands(commands.Cog):
                 embed.description += "\n**Greenhouse** - 500 coins (You need a greenhouse to plant seeds!)"
             for plant in plants:
                 plant_name = plant.name
+                plant_description = plant.description
                 plant_price = plant.cost
-                embed.description += f"\n**{plant_name}** - {plant_price} coins"
+                embed.description += f"\n**{plant_name}** - {plant_description} ({plant_price} coins)"
             await ctx.respond("*Insert \"[Gaiety in the Golden Age](https://www.youtube.com/watch?v=u5BNQDzXEu8)\" shopping soundtrack*", embed=embed)
         else:
             all_plants = await GardenBackend().get_all_plants()
@@ -126,12 +127,15 @@ class GardenCommands(commands.Cog):
             embed.set_footer(text="Visit the /garden shop to buy a greenhouse.")
             return await ctx.respond(embed=embed)
         slot_count = 0
-        for plant in greenhouse:
+        for user in greenhouse:
             for slot in slots:
                 slot_count += 1
-                plant_id = getattr(plant, slot)
+                plant_id = getattr(user, slot)
                 if plant_id == -1: break
-                await ctx.respond("Test")
+                if plant_id == 0:
+                    embed.description += f"\n**Slot {slot_count}:** Empty"
+                    continue
+                else: embed.description += f"\n**Slot {slot_count}:** {await GardenBackend().get_plant_name(plant_id=plant_id)} (Grown in {await GardenBackend().get_plant_grow_time(plant_id=plant_id)} minutes)"
         
         await ctx.respond(embed=embed)
 
@@ -160,13 +164,19 @@ class GardenCommands(commands.Cog):
             embed.set_thumbnail(url="https://img.icons8.com/fluency/48/sprout.png")
             return await ctx.respond(embed=embed)
         greenhouse = await GardenBackend().get_greenhouse_from_user(user_id=ctx.author.id, guild_id=ctx.guild.id)
-        empty_slot = None
         if not greenhouse:
             embed: discord.Embed = await default_embed(ctx.author, fact=False)
             embed.title = "Your Greenhouse"
             embed.description = "You have no greenhouse yet. Buy one from the /garden shop first!"
             embed.set_thumbnail(url="https://img.icons8.com/fluency/48/sprout.png")
             return await ctx.respond(embed=embed)
+        empty_slot = None
+        for user in greenhouse:
+            for slot in slots:
+                plant_id = getattr(user, slot)
+                if plant_id == -1:
+                    empty_slot = slot
+                    break
         
 
         
