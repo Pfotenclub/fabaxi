@@ -16,16 +16,14 @@ class AutoCommands(commands.Cog):
         if isinstance(error, commands.CheckFailure):
             await ctx.send("You are not authorized to use this command.")
             await send_system_message(
-                picture_url=self.bot.user.avatar,
-                username=self.bot.user.name,
+                bot=self.bot,
                 content=f"Unauthorized access attempt by {ctx.author} ({ctx.author.id}) ({ctx.guild.id}) for command `{ctx.command}`.",
             )
         else:
             self.counter += 1
             # channel = self.bot.get_channel(data["error"])
             await send_system_message(
-                picture_url=self.bot.user.avatar,
-                username=self.bot.user.name,
+                bot=self.bot,
                 content=f"Error report Nr. {self.counter} after reset.\nServer: {ctx.message.guild}\nCommand: {ctx.message.content}\nError: {error}",
                 alert=True
             )
@@ -50,11 +48,11 @@ class AutoCommands(commands.Cog):
         if str(error).startswith("The check functions"):
             await ctx.respond("You are not authorized to use this command.")
         else:
+            await ctx.respond("There was an error while executing the command.")
             self.counter += 1
             await send_system_message(
-                picture_url=self.bot.user.avatar,
-                username=self.bot.user.name,
-                content=f"Error report Nr. {self.counter} after reset.\nServer: {ctx.guild}\nCommand: {ctx.command.name}\nError: {error}",
+                bot=self.bot,
+                content=f"Error report Nr. {self.counter} after reset.\nServer: {ctx.guild}\nCommand: {ctx.command.name}\nUser: {ctx.author} ({ctx.author.id})\nError: ```\n{error}```",
                 alert=True
             )
             """ Storing this for archive purposes, maybe useful later
