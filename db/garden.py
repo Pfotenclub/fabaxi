@@ -137,7 +137,7 @@ class GardenBackend(Database):
             )
             grown_time = result.scalar_one_or_none()
             return grown_time
-    
+
     async def get_plant_cost(self, plant_id: int):
         """
         Gets the cost of a plant from GardenBaseTable.
@@ -224,6 +224,19 @@ class GardenBackend(Database):
         async with self.get_session() as session:
             result = await session.execute(
                 select(GardenBaseTable.name).where(GardenBaseTable.plant_id == plant_id)
+            )
+            plant = result.scalar_one_or_none()
+            return plant
+
+    async def get_plant_description(self, plant_id: int):
+        """
+        Gets the description of a plant from GardenBaseTable by its ID.
+        
+        :param plant_id: Plant ID from GardenBaseTable to get description for
+        """
+        async with self.get_session() as session:
+            result = await session.execute(
+                select(GardenBaseTable.description).where(GardenBaseTable.plant_id == plant_id)
             )
             plant = result.scalar_one_or_none()
             return plant
