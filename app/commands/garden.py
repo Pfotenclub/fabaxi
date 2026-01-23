@@ -16,9 +16,8 @@ slots = ["slot1", "slot2", "slot3", "slot4", "slot5"]
 class GardenCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
+################################################################################## Garden Commands
     garden = discord.SlashCommandGroup("garden", "Commands related to the garden system.")
-
 
     @garden.command(name="seeds", description="View all the seeds you have and can plant.")
     async def seeds(self, ctx: discord.ApplicationContext):
@@ -30,6 +29,9 @@ class GardenCommands(commands.Cog):
         embed.description = "Here are all the plants you have in your garden:"
         embed.set_thumbnail(url="https://img.icons8.com/fluency/48/sprout.png")
         embed.set_footer(text="Use /garden greenhouse plant to plant your seeds in your greenhouse.")
+        if not plants:
+            embed.description = "**You don't have any seeds yet. Visit the /garden shop to buy some!**"
+            return await ctx.respond(embed=embed)
         for plant in plants:
             plant_name = await GardenBackend().get_plant_name(plant_id=plant)
             embed.description += f"\n**{plant_name}**: {plants[plant]} seed{'s' if plants[plant] > 1 else ''}"
@@ -110,8 +112,9 @@ class GardenCommands(commands.Cog):
             embed.set_thumbnail(url="https://img.icons8.com/fluency/48/online-shop-shopping-bag.png")
             embed.set_footer(text="Use /garden seeds to view your purchased seeds.")
             await ctx.respond(embed=embed)
-
+################################################################################## Greenhouse Commands
     greenhouse = garden.create_subgroup("greenhouse", "Commands related to your greenhouse.")
+
     @greenhouse.command(name="view", description="View the plants in your greenhouse.")
     async def view_greenhouse(self, ctx: discord.ApplicationContext):
         await ctx.defer()
@@ -120,10 +123,11 @@ class GardenCommands(commands.Cog):
         embed: discord.Embed = await default_embed(ctx.author, fact=False)
         embed.title = "Your Greenhouse"
         embed.description = "Here are the plants in your greenhouse:"
+        embed.set_footer(text="Use /garden greenhouse harvest to harvest fully grown plants.")
+        embed.set_thumbnail(url="https://img.icons8.com/fluency/48/sprout.png")
 
         if not greenhouse:
-            embed.description = "**You don't have a greenhouse yet. Use /garden greenhouse create to get started!**"
-            embed.set_thumbnail(url="https://img.icons8.com/fluency/48/sprout.png")
+            embed.description = "**You don't have a greenhouse yet. Visit the /garden shop to buy one!**"
             embed.set_footer(text="Visit the /garden shop to buy a greenhouse.")
             return await ctx.respond(embed=embed)
         slot_count = 0
@@ -135,7 +139,21 @@ class GardenCommands(commands.Cog):
                 if plant_id == 0:
                     embed.description += f"\n**Slot {slot_count}:** Empty"
                     continue
-                else: embed.description += f"\n**Slot {slot_count}:** {await GardenBackend().get_plant_name(plant_id=plant_id)} (Grown in {await GardenBackend().get_plant_grow_time(plant_id=plant_id)} minutes)"
+                else:
+                    grow_time = await GardenBackend().get_plant_grown_time(user_id=ctx.author.id, guild_id=ctx.guild.id, plant_id=plant_id, slot=slot)
+                    grow_time_text = ""
+                    if grow_time <= 0:
+                        grow_time_text = "(Fully Grown!)"
+                    elif grow_time > 60:
+                        grow_time_hours = grow_time // 60
+                        grow_time_minutes = grow_time % 60
+                        if grow_time_hours > 24:
+                            grow_time_days = grow_time_hours // 24
+                            grow_time_hours = grow_time_hours % 24
+                            grow_time_text = f"(Grows in {grow_time_days} day{'s' if grow_time_days > 1 else ''}, {grow_time_hours} hour{'s' if grow_time_hours != 1 else ''}, {grow_time_minutes} minute{'s' if grow_time_minutes != 1 else ''})"
+                        else:
+                            grow_time_text = f"(Grows in {grow_time_hours} hour{'s' if grow_time_hours != 1 else ''}, {grow_time_minutes} minute{'s' if grow_time_minutes != 1 else ''})"
+                    embed.description += f"\n**Slot {slot_count}:** {await GardenBackend().get_plant_name(plant_id=plant_id)} {grow_time_text}"
         
         await ctx.respond(embed=embed)
 
@@ -173,11 +191,26 @@ class GardenCommands(commands.Cog):
         empty_slot = None
         for user in greenhouse:
             for slot in slots:
-                plant_id = getattr(user, slot)
-                if plant_id == -1:
+                slotid = getattr(user, slot)
+                if slotid == 0:
                     empty_slot = slot
                     break
+        if not empty_slot:
+            embed: discord.Embed = await default_embed(ctx.author, fact=False)
+            embed.title = "Your Greenhouse"
+            embed.description = "Your greenhouse is full! You need to wait for some plants to grow before planting more."
+            embed.set_footer(text="Use /garden greenhouse view to see your current plants.")
+            embed.set_thumbnail(url="https://img.icons8.com/fluency/48/sprout.png")
+            return await ctx.respond(embed=embed)
         
+        await GardenBackend().plant_seed_in_greenhouse(user_id=ctx.author.id, guild_id=ctx.guild.id, plant_id=selected_plant, slot=empty_slot)
+        await GardenBackend().remove_plant_from_user(user_id=ctx.author.id, guild_id=ctx.guild.id, plant_id=selected_plant)
+        embed: discord.Embed = await default_embed(ctx.author, fact=False)
+        embed.title = "Your Greenhouse"
+        embed.description = f"You have successfully planted a {await GardenBackend().get_plant_name(plant_id=selected_plant)} seed in your greenhouse!"
+        embed.set_thumbnail(url="https://img.icons8.com/fluency/48/sprout.png")
+        embed.set_footer(text="Use /garden greenhouse view to see your planted seeds.")
+        await ctx.respond(embed=embed)        
 
         
 
