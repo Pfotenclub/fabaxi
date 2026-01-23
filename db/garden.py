@@ -45,24 +45,27 @@ class GardenBackend(Database):
         await session.execute(stmt)
         await session.commit()
     
-    async def plant_seed_in_greenhouse(self, user_id: int, guild_id: int, plant_id: int, slot_number: int):
+    async def plant_seed_in_greenhouse(self, user_id: int, guild_id: int, plant_id: int, slot: str):
         """
-        Docstring for plant_seed_in_greenhouse
+        Plants a seed in a specific slot in the user's greenhouse.
+        Does not check if the slot is already occupied and will not remove balance for the plant.
         
         :param user_id: User ID from User to plant seed for
         :param guild_id: Guild ID from Guild to plant seed for
         :param plant_id: Plant ID from GardenBaseTable to plant
-        :param slot_number: Slot number in greenhouse to plant seed in (1-5)
+        :param slot: Slot column name in greenhouse to plant seed in, possible values: slot1, slot2, slot3, slot4, slot5
         """
-        now = int(datetime.now().timestamp() / 60)
-        slot_column = f"slot{slot_number}"
-        slot_planted_time_column = f"slot{slot_number}_planted_time"
+        now = int(datetime.now().timestamp())
+        slot_column = f"{slot}"
+        slot_planted_time_column = f"{slot}_planted_time"
         
         async with self.get_session() as session:
-            stmt = insert(GardenGreenhouseTable).values(
-                user_id=user_id,
-                guild_id=guild_id,
-                **{slot_column: plant_id, slot_planted_time_column: now}
+            stmt = update(GardenGreenhouseTable).where(
+                (GardenGreenhouseTable.user_id == user_id) &
+                (GardenGreenhouseTable.guild_id == guild_id)
+            ).values(
+                **{slot_column: plant_id,
+                   slot_planted_time_column: now}
             )
         await session.execute(stmt)
         await session.commit()
@@ -100,7 +103,7 @@ class GardenBackend(Database):
                     (GardenUserTable.plant_id == plant_id)
                 )
             )
-            plant_entry = result.scalar_one_or_none()
+            plant_entry = result.scalars().first()
 
         async with self.get_session() as session:
             stmt = delete(GardenUserTable).where(
@@ -241,7 +244,7 @@ class GardenBackend(Database):
             plant = result.scalar_one_or_none()
             return plant
         
-    async def get_plant_grown_time(self, user_id: int, guild_id: int, slot: str):
+    async def get_plant_grown_time(self, user_id: int, guild_id: int, plant_id: int, slot: str):
         """
         Gets the grown time of a plant from a specific slot in the user's greenhouse.
         Value will be returned in minutes
@@ -250,6 +253,8 @@ class GardenBackend(Database):
         :type user_id: int
         :param guild_id: Guild ID from Guild to get plant grown time for
         :type guild_id: int
+        :param plant_id: Plant ID from GardenBaseTable to get plant grown time for
+        :type plant_id: int
         :param slot: Slot column name in greenhouse to get plant grown time for, possible values: slot1, slot2, slot3, slot4, slot5
         :type slot: str
         """
@@ -263,5 +268,6 @@ class GardenBackend(Database):
                 )
             )
             planted_time = result.scalar_one_or_none()
-            planted_time = (datetime.now().timestamp() - planted_time) / 60 # Convert to minutes
+            grow_time = await self.get_grown_time(plant_id=plant_id)
+            planted_time = int(((planted_time + grow_time) - datetime.now().timestamp()) / 60) # Convert to minutes
             return planted_time
