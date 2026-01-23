@@ -240,3 +240,28 @@ class GardenBackend(Database):
             )
             plant = result.scalar_one_or_none()
             return plant
+        
+    async def get_plant_grown_time(self, user_id: int, guild_id: int, slot: str):
+        """
+        Gets the grown time of a plant from a specific slot in the user's greenhouse.
+        Value will be returned in minutes
+        
+        :param user_id: User ID from User to get plant grown time for
+        :type user_id: int
+        :param guild_id: Guild ID from Guild to get plant grown time for
+        :type guild_id: int
+        :param slot: Slot column name in greenhouse to get plant grown time for, possible values: slot1, slot2, slot3, slot4, slot5
+        :type slot: str
+        """
+        slot_planted_time_column = f"{slot}_planted_time"
+        
+        async with self.get_session() as session:
+            result = await session.execute(
+                select(getattr(GardenGreenhouseTable, slot_planted_time_column)).where(
+                    (GardenGreenhouseTable.user_id == user_id) &
+                    (GardenGreenhouseTable.guild_id == guild_id)
+                )
+            )
+            planted_time = result.scalar_one_or_none()
+            planted_time = (datetime.now().timestamp() - planted_time) / 60 # Convert to minutes
+            return planted_time
