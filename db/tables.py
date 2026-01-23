@@ -52,7 +52,7 @@ class GardenBaseTable(Base):
         self.plant_id = plant_id
         self.name = name
         self.description = description
-        self.grow_time = grow_time # in minutes
+        self.grow_time = grow_time # in seconds
         self.cost = cost
         self.picture_url = picture_url
 
