@@ -155,8 +155,8 @@ class GardenCommands(commands.Cog):
                             grow_time_text = f"(Grows in {grow_time_hours} hour{'s' if grow_time_hours != 1 else ''}, {grow_time_minutes} minute{'s' if grow_time_minutes != 1 else ''})"
                     embed.description += f"\n**Slot {slot_count}:** {await GardenBackend().get_plant_name(plant_id=plant_id)} {grow_time_text}"
         
-        file = discord.File(fp="./ext/images/Rastergrafik.png", filename="Rastergrafik.png")
-        embed.set_image(url="attachment://Rastergrafik.png")
+        file = discord.File(fp="./ext/images/greenhouse_base.png", filename="greenhouse_base.png")
+        embed.set_image(url="attachment://greenhouse_base.png")
         await ctx.respond(embed=embed, file=file)
 
     @greenhouse.command(name="plant", description="Plant a seed in your greenhouse.")
