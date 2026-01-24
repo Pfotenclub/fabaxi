@@ -46,7 +46,30 @@ class AdminCommands(commands.Cog):
     @commands.command(name="rules")
     @is_owner()
     async def rules(self, ctx: commands.context):
-        pass
+        picture_embed = discord.Embed()
+        file = discord.File(fp="./ext/images/rules.png", filename="rules.png")
+        picture_embed.set_image(url="attachment://rules.png")
+        picture_embed.color = 0x1abc9c
+
+        rules_embed = discord.Embed(title="Official Pfotenclub rules", description="Under the loving dictatorship of Muffin and Wolfiii")
+        rules_embed.color = 0x1abc9c
+        rules_embed.add_field(name="1. Respect", value="Respect other members... or at least pretend to. We know you're capable of being passive-aggressive.", inline=False)
+        rules_embed.add_field(name="2. Spamming", value="Spamming is strictly forbidden... unless you have really good memes. In that case, please forward them to the server management for quality control.", inline=False)
+        rules_embed.add_field(name="3. NSFW", value="NSFW content is strictly limited to the Pfoten Nightclub category. If you want access, request approval in #approval. No approval, no entry – keep it clean everywhere else!", inline=False)
+        rules_embed.add_field(name="4. Bots", value="Don’t be a bot. We’re not against automation, but if you don’t have a soul, you’re in the wrong place. (This also applies to Muffin.)", inline=False)
+        rules_embed.add_field(name="5. Recognizement of Poland", value="We tried being bad neighbors once – didn’t end well. So here’s the deal: We recognize the Polish Border and the sovereignty of it's state, and we’re not opening that chapter again.", inline=False)
+        rules_embed.add_field(name="6. Have fun!", value="This is the most important rule. If you’re not having fun, you’re doing it wrong. Unless you’re a cat – then just nap.", inline=False)
+        rules_embed.add_field(name="7. Furry Pride", value="We know you’re a furry, but please keep your fursuit in check. If you show up in one, we expect you to wear it while shopping, at the dentist, and during family gatherings.", inline=False)
+        rules_embed.add_field(name="8. Criticism of the Admins", value="Criticism of Muffin and Wolfiii is welcome – and will be promptly discarded. Complaint hotline: 0800-WE-DONT-CARE.", inline=False)
+        rules_embed.add_field(name="9. AFK", value="Anyone who’s AFK for more than 24 hours will be reported missing and given the “Zombie” role. Don’t want that? Better post proof of life regularly.", inline=False)
+        rules_embed.add_field(name="10. Eating in Voice Chat", value="Eating noises in voice chat are only allowed if you share some with us. Digital cookies don’t count, Muffin checked.", inline=False)
+        rules_embed.add_field(name="11. Farewells", value="Anyone leaving the server must deliver an emotional farewell speech. Tears are optional, but we expect at least a PowerPoint presentation of your best moments.", inline=False)
+        rules_embed.add_field(name="12. Birth", value="PLEASE DO NOT give birth. No, seriously. The burgeramt is already overworked, and adding “midwife” to their duties isn’t on the table.", inline=False)
+        rules_embed.add_field(name="13. Kissing", value="Under all circumstances, DO NOT KISS BOYS AS A BOY.\n350€ penatly that goes into the boykisser coffers.", inline=False)
+
+        await ctx.send(file=file, embed=picture_embed)
+        await ctx.send(embed=rules_embed)
+        await ctx.message.delete()
 
     @discord.Cog.listener("on_raw_reaction_add")
     async def chooseRoleColor(self, payload):
