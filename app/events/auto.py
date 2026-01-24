@@ -17,7 +17,7 @@ class AutoCommands(commands.Cog):
             await ctx.send("You are not authorized to use this command.")
             await send_system_message(
                 bot=self.bot,
-                content=f"Unauthorized access attempt by {ctx.author} ({ctx.author.id}) ({ctx.guild.id}) for command `{ctx.command}`.",
+                content=f"Unauthorized access attempt by {ctx.author} ({ctx.author.id}) for command `{ctx.command}`.",
             )
         else:
             self.counter += 1
