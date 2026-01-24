@@ -67,6 +67,7 @@ class AdminCommands(commands.Cog):
         rules_embed.add_field(name="12. Birth", value="PLEASE DO NOT give birth. No, seriously. The burgeramt is already overworked, and adding “midwife” to their duties isn’t on the table.", inline=False)
         rules_embed.add_field(name="13. Kissing", value="Under all circumstances, DO NOT KISS BOYS AS A BOY.\n350€ penatly that goes into the boykisser coffers.", inline=False)
 
+        await ctx.send("Hey and Welcome to Pfotenclub! Your new home rom now on :3\n\nBefore you can start socializing (eek-, thats that >->?), here are the rules of this server.")
         await ctx.send(file=file, embed=picture_embed)
         await ctx.send(embed=rules_embed)
         await ctx.message.delete()
