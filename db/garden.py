@@ -114,6 +114,40 @@ class GardenBackend(Database):
             )
         await session.execute(stmt)
         await session.commit()
+    
+    async def harvest_plant_from_greenhouse(self, user_id: int, guild_id: int, slot: str):
+        """
+        Harvests a plant from a specific slot in the user's greenhouse.
+        Also gives the money for the harvested plant.
+        Does not check if the plant is fully grown.
+        
+        :param user_id: User ID from User to harvest plant for
+        :param guild_id: Guild ID from Guild to harvest plant for
+        :param slot: Slot column name in greenhouse to harvest plant from, possible values: slot1, slot2, slot3, slot4, slot5
+        """
+        slot_column = f"{slot}"
+        slot_planted_time_column = f"{slot}_planted_time"
+        
+        async with self.get_session() as session:
+            result = await session.execute(
+                select(getattr(GardenGreenhouseTable, slot_column)).where(
+                    (GardenGreenhouseTable.user_id == user_id) &
+                    (GardenGreenhouseTable.guild_id == guild_id)
+                )
+            )
+            plant_id = result.scalar_one_or_none()
+            plant_gain = await self.get_plant_gain(plant_id=plant_id)
+            await EconomyBackend().add_balance(user_id=user_id, guild_id=guild_id, amount=plant_gain)
+            stmt = update(GardenGreenhouseTable).where(
+                (GardenGreenhouseTable.user_id == user_id) &
+                (GardenGreenhouseTable.guild_id == guild_id)
+            ).values(
+                **{slot_column: 0,
+                   slot_planted_time_column: 0}
+            )
+        await session.execute(stmt)
+        await session.commit()
+    
 ################################################################################## Getters    
     async def get_all_plants(self):
         """
@@ -154,6 +188,19 @@ class GardenBackend(Database):
             )
             cost = result.scalar_one_or_none()
             return cost
+    async def get_plant_gain(self, plant_id: int):
+        """
+        Gets the gain of a plant from GardenBaseTable.
+        
+        :param plant_id: Plant ID from GardenBaseTable to get gain for
+        :type plant_id: int
+        """
+        async with self.get_session() as session:
+            result = await session.execute(
+                select(GardenBaseTable.gain).where(GardenBaseTable.plant_id == plant_id)
+            )
+            gain = result.scalar_one_or_none()
+            return gain
 ################################################ User Getters
     async def get_all_plants_from_user(self, user_id: int, guild_id: int):
         """
