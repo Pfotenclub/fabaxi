@@ -78,7 +78,7 @@ class EconomyBackend(Database):
             )
             return records.scalars().all()
         
-    async def get_economy_record(self, user_id: int, guild_id: int):
+    async def get_balance(self, user_id: int, guild_id: int):
         """
         Get economy record for a specific user in a guild.
         
@@ -96,4 +96,8 @@ class EconomyBackend(Database):
                     (EconomyTable.guild_id == guild_id)
                 )
             )
-            return record.scalar_one_or_none()
+            balance_record = record.scalar_one_or_none()
+            if balance_record:
+                return balance_record.balance
+            else:
+                return 0
