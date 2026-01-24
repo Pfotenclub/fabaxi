@@ -17,13 +17,32 @@ class EconomyBackend(Database):
         :param amount: Initial balance amount
         """
         async with self.get_session() as session:
-            stmt = insert(EconomyTable).values(
-                user_id=user_id,
-                guild_id=guild_id,
-                balance=amount
+            record = await session.execute(
+                select(EconomyTable).where(
+                    (EconomyTable.user_id == user_id) &
+                    (EconomyTable.guild_id == guild_id)
+                )
             )
-            await session.execute(stmt)
-            await session.commit()
+            existing_record = record.scalar_one_or_none()
+            if existing_record:
+                # If record exists, update the balance instead
+                stmt = update(EconomyTable).where(
+                    (EconomyTable.user_id == user_id) &
+                    (EconomyTable.guild_id == guild_id)
+                ).values(
+                    balance=EconomyTable.balance + amount
+                )
+                await session.execute(stmt)
+                await session.commit()
+                return
+            else:
+                stmt = insert(EconomyTable).values(
+                    user_id=user_id,
+                    guild_id=guild_id,
+                    balance=amount
+                )
+                await session.execute(stmt)
+                await session.commit()
     
     async def remove_balance(self, user_id: int, guild_id: int, amount: int):
         """
