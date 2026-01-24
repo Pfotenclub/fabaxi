@@ -155,7 +155,9 @@ class GardenCommands(commands.Cog):
                             grow_time_text = f"(Grows in {grow_time_hours} hour{'s' if grow_time_hours != 1 else ''}, {grow_time_minutes} minute{'s' if grow_time_minutes != 1 else ''})"
                     embed.description += f"\n**Slot {slot_count}:** {await GardenBackend().get_plant_name(plant_id=plant_id)} {grow_time_text}"
         
-        await ctx.respond(embed=embed)
+        file = discord.File(fp="./ext/images/Rastergrafik.png", filename="Rastergrafik.png")
+        embed.set_image(url="attachment://Rastergrafik.png")
+        await ctx.respond(embed=embed, file=file)
 
     @greenhouse.command(name="plant", description="Plant a seed in your greenhouse.")
     @discord.option(name="plant", description="The plant you want to plant. (Has to be the exact name)", type=discord.SlashCommandOptionType.string, required=True)
@@ -211,8 +213,36 @@ class GardenCommands(commands.Cog):
         embed.set_thumbnail(url="https://img.icons8.com/fluency/48/sprout.png")
         embed.set_footer(text="Use /garden greenhouse view to see your planted seeds.")
         await ctx.respond(embed=embed)        
-
+    
+    @greenhouse.command(name="harvest", description="Harvest fully grown plants from your greenhouse.")
+    @discord.option(name="slot_number", description="The slot number of the plant you want to harvest. (1-5)", type=discord.SlashCommandOptionType.integer, required=True)
+    async def harvest_plants(self, ctx: discord.ApplicationContext, slot_number: int = None):
+        if slot_number < 1 or slot_number > 5:
+            return await ctx.respond("Invalid slot number. Please provide a slot number between 1 and 5.", ephemeral=True)
+        await ctx.defer()
+        greenhouse = await GardenBackend().get_greenhouse_from_user(user_id=ctx.author.id, guild_id=ctx.guild.id)
+        embed: discord.Embed = await default_embed(ctx.author, fact=False)
+        embed.title = "Your Greenhouse"
+        embed.set_thumbnail(url="https://img.icons8.com/fluency/48/sprout.png")
+        if not greenhouse:
+            embed.description = "You have no greenhouse yet to harvest plants from. Buy one from the /garden shop first!"
+            return await ctx.respond(embed=embed)
         
+        slot = f"slot{slot_number}"
+        greenhouse = greenhouse[0]
+        plant_id = getattr(greenhouse, slot)
+        if plant_id == -1:
+            embed.description = f"You don't have this slot in your greenhouse. Buy a bigger greenhouse from the /garden shop!"
+            return await ctx.respond(embed=embed)
+        if plant_id == 0:
+            embed.description = f"Slot {slot_number} is empty. You have no plant to harvest here."
+            return await ctx.respond(embed=embed)
+        grow_time = await GardenBackend().get_plant_grown_time(user_id=ctx.author.id, guild_id=ctx.guild.id, plant_id=plant_id, slot=slot)
+        if grow_time > 0:
+            embed.description = f"The plant in slot {slot_number} is not fully grown yet. Please wait until it is fully grown before harvesting."
+            return await ctx.respond(embed=embed)
+        plant_name = await GardenBackend().get_plant_name(plant_id=plant_id)
+
 
 
 def setup(bot):
