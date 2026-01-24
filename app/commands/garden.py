@@ -69,8 +69,8 @@ class GardenCommands(commands.Cog):
                     embed.set_thumbnail(url="https://img.icons8.com/fluency/48/online-shop-shopping-bag.png")
                     embed.set_footer(text="Use /garden greenhouse to manage your greenhouse.")
                     return await ctx.respond(embed=embed)
-                user_balance = await EconomyBackend().get_economy_record(user_id=ctx.author.id, guild_id=ctx.guild.id)
-                if not user_balance or user_balance.balance < 500:
+                user_balance = await EconomyBackend().get_balance(user_id=ctx.author.id, guild_id=ctx.guild.id)
+                if user_balance < 500:
                     embed: discord.Embed = await default_embed(ctx.author, fact=False)
                     embed.title = "Garden Shop"
                     embed.description = f"You do not have enough coins to buy a greenhouse."
@@ -96,8 +96,8 @@ class GardenCommands(commands.Cog):
                 embed.set_thumbnail(url="https://img.icons8.com/fluency/48/online-shop-shopping-bag.png")
                 embed.set_footer(text="Use /garden shop to view all available plants, or stop being dumb.")
                 return await ctx.respond(embed=embed)
-            user_balance = await EconomyBackend().get_economy_record(user_id=ctx.author.id, guild_id=ctx.guild.id)
-            if not user_balance or user_balance.balance < selected_plant.cost:
+            user_balance = await EconomyBackend().get_balance(user_id=ctx.author.id, guild_id=ctx.guild.id)
+            if user_balance < selected_plant.cost:
                 embed: discord.Embed = await default_embed(ctx.author, fact=False)
                 embed.title = "Garden Shop"
                 embed.description = f"You do not have enough coins to buy a seed of {selected_plant.name}."
