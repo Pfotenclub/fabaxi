@@ -45,15 +45,17 @@ class GardenBaseTable(Base):
     description = Column(String(255), nullable=False)
     grow_time = Column(Integer, nullable=False)
     cost = Column(Integer, nullable=False)
+    gain = Column(Integer, nullable=False)
     picture_url = Column(String(255), nullable=True)
 
-    def __init__(self, plant_id, name, description, grow_time, cost, picture_url=None):
+    def __init__(self, plant_id, name, description, grow_time, cost, gain, picture_url=None):
         super().__init__()
         self.plant_id = plant_id
         self.name = name
         self.description = description
         self.grow_time = grow_time # in seconds
         self.cost = cost
+        self.gain = gain
         self.picture_url = picture_url
 
     def dump(self):
