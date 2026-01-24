@@ -40,13 +40,13 @@ class EconomyTable(Base):
     
 class GardenBaseTable(Base):
     __tablename__ = "garden_base"
-    plant_id = Column(Integer, primary_key=True, nullable=False)
+    plant_id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     name = Column(String(100), nullable=False)
     description = Column(String(255), nullable=False)
     grow_time = Column(Integer, nullable=False)
     cost = Column(Integer, nullable=False)
     gain = Column(Integer, nullable=False)
-    picture_url = Column(String(255), nullable=True)
+    picture_url = Column(String(255), nullable=False)
 
     def __init__(self, plant_id, name, description, grow_time, cost, gain, picture_url=None):
         super().__init__()
