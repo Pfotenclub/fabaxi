@@ -5,6 +5,7 @@ from ext.system import default_embed
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
+from ext.system import is_owner
 
 from db.temp_voice import TempVoiceBackend
 
@@ -73,7 +74,7 @@ class TempVoiceCog(commands.Cog):
         self.bot = bot
     # Command to create and send the temp voice interface
     @commands.command(name="temp-voice-interface")
-    @commands.is_owner()
+    @is_owner()
     async def tempVoiceInterface(self, ctx: discord.ApplicationContext): # when the command is called
         view = discord.ui.View(timeout=None) # create a view
 
