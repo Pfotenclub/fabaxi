@@ -4,7 +4,7 @@ import requests
 import aiohttp
 import discord
 from discord import Webhook
-from discord import commands
+from discord.ext import commands
 
 # used to send a system message to a webhook into the channel fabaxi_systems
 async def send_system_message(bot: discord.Bot, content: str, alert: bool = False):
