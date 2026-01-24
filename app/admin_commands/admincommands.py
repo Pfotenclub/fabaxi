@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import os
 import json
+from ext.system import is_owner
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -15,7 +16,7 @@ class AdminCommands(commands.Cog):
         self.bot = bot
 
     @commands.command(name="role-colors")
-    @commands.is_owner()
+    @is_owner()
     async def roleColors(self, ctx: commands.context):
         roleJson = None
         with open(os.path.join(data_path, "rolecolors.json"), "r", encoding='utf-8') as file: roleJson = json.load(file)
@@ -41,6 +42,11 @@ class AdminCommands(commands.Cog):
             file.truncate()
 
         await ctx.message.delete()
+    
+    @commands.command(name="rules")
+    @is_owner()
+    async def rules(self, ctx: commands.context):
+        pass
 
     @discord.Cog.listener("on_raw_reaction_add")
     async def chooseRoleColor(self, payload):
