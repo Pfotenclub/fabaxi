@@ -242,6 +242,10 @@ class GardenCommands(commands.Cog):
             embed.description = f"The plant in slot {slot_number} is not fully grown yet. Please wait until it is fully grown before harvesting."
             return await ctx.respond(embed=embed)
         plant_name = await GardenBackend().get_plant_name(plant_id=plant_id)
+        plant_gain = await GardenBackend().get_plant_gain(plant_id=plant_id)
+        await GardenBackend().harvest_plant_from_greenhouse(user_id=ctx.author.id, guild_id=ctx.guild.id, slot=slot)
+        embed.description = f"You have successfully harvested a {plant_name} from slot {slot_number} and earned {plant_gain} coins!"
+        return await ctx.respond(embed=embed)
 
 
 
