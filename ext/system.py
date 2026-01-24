@@ -4,6 +4,7 @@ import requests
 import aiohttp
 import discord
 from discord import Webhook
+from discord import commands
 
 # used to send a system message to a webhook into the channel fabaxi_systems
 async def send_system_message(bot: discord.Bot, content: str, alert: bool = False):
@@ -34,3 +35,9 @@ async def default_embed(user: discord.User, fact: bool = True):
                 fact = data.get("text", "No fact found.")
         embed.set_footer(text=fact)
     return embed
+
+OWNER_IDS = [327880195476422656, 474947907913515019]
+def is_owner():
+    async def predicate(ctx):
+        return ctx.author.id in OWNER_IDS
+    return commands.check(predicate)
