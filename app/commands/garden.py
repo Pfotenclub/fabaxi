@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 import os
 from datetime import datetime
+from PIL import Image
+import io
 
 from db.economy import EconomyBackend
 from db.garden import GardenBackend
@@ -12,6 +14,8 @@ from dotenv import load_dotenv
 load_dotenv()
 environment = os.getenv("ENVIRONMENT")
 slots = ["slot1", "slot2", "slot3", "slot4", "slot5"]
+pot_positions = [(143, 308), (442, 643), (936, 398), (1348, 799), (1731, 543)]
+plant_positions= [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
 
 class GardenCommands(commands.Cog):
     def __init__(self, bot):
@@ -130,6 +134,9 @@ class GardenCommands(commands.Cog):
             embed.description = "**You don't have a greenhouse yet. Visit the /garden shop to buy one!**"
             embed.set_footer(text="Visit the /garden shop to buy a greenhouse.")
             return await ctx.respond(embed=embed)
+        
+        background = Image.open("./ext/images/greenhouse_base.png").convert("RGBA")
+        img_bytes = io.BytesIO()
         slot_count = 0
         for user in greenhouse:
             for slot in slots:
@@ -138,6 +145,8 @@ class GardenCommands(commands.Cog):
                 if plant_id == -1: break
                 if plant_id == 0:
                     embed.description += f"\n**Slot {slot_count}:** Empty"
+                    overlay = Image.open("./ext/images/pot_empty.png").convert("RGBA")
+                    background.paste(overlay, pot_positions[slot_count - 1], overlay)
                     continue
                 else:
                     grow_time = await GardenBackend().get_plant_grown_time(user_id=ctx.author.id, guild_id=ctx.guild.id, plant_id=plant_id, slot=slot)
@@ -155,7 +164,9 @@ class GardenCommands(commands.Cog):
                             grow_time_text = f"(Grows in {grow_time_hours} hour{'s' if grow_time_hours != 1 else ''}, {grow_time_minutes} minute{'s' if grow_time_minutes != 1 else ''})"
                     embed.description += f"\n**Slot {slot_count}:** {await GardenBackend().get_plant_name(plant_id=plant_id)} {grow_time_text}"
         
-        file = discord.File(fp="./ext/images/greenhouse_base.png", filename="greenhouse_base.png")
+        background.save(img_bytes, format='PNG')
+        img_bytes.seek(0)
+        file = discord.File(img_bytes, filename="greenhouse_base.png")
         embed.set_image(url="attachment://greenhouse_base.png")
         await ctx.respond(embed=embed, file=file)
 
