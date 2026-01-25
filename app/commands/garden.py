@@ -174,7 +174,27 @@ class GardenCommands(commands.Cog):
                     background.paste(overlay, pot_positions[slot_count - 1], overlay)
                     continue
                 else:
-                    grow_time = await GardenBackend().get_plant_grown_time(user_id=ctx.author.id, guild_id=ctx.guild.id, plant_id=plant_id, slot=slot)
+                    grow_time = await GardenBackend().get_plant_grown_time(user_id=ctx.author.id, guild_id=ctx.guild.id, plant_id=plant_id, slot=slot) * 60 # Convert to seconds
+                    required_grow_time = await GardenBackend().get_grown_time(plant_id=plant_id)
+                    stage_ratio = required_grow_time / 3
+                    if grow_time != 0 and grow_time > stage_ratio * 2: # Stage 1 (just the empty pot)
+                        pot = Image.open("./ext/images/pot_empty.png").convert("RGBA")
+                        background.paste(pot, pot_positions[slot_count - 1], pot)
+                    elif grow_time != 0 and grow_time > stage_ratio and grow_time <= stage_ratio * 2: # Stage 2
+                        pot = Image.open("./ext/images/pot_empty.png").convert("RGBA")
+                        plant_image = Image.open("./ext/images/plants/plant_stage_2.png").convert("RGBA")
+                        pot.paste(plant_image, plant_positions[slot_count - 1], plant_image)
+                        background.paste(pot, pot_positions[slot_count - 1], pot)
+                    elif grow_time != 0 and grow_time <= stage_ratio and grow_time > 0: # Stage 3
+                        pot = Image.open("./ext/images/pot_empty.png").convert("RGBA")
+                        plant_image = Image.open("./ext/images/plants/plant_stage_3.png").convert("RGBA")
+                        pot.paste(plant_image, plant_positions[slot_count - 1], plant_image)
+                        background.paste(pot, pot_positions[slot_count - 1], pot)
+                    elif grow_time == 0: # Stage 4 (fully grown)
+                        pot = Image.open("./ext/images/pot_empty.png").convert("RGBA")
+                        plant_image = Image.open(f"./ext/images/plants/plant_{plant_id}.png").convert("RGBA")
+                        pot.paste(plant_image, plant_positions[slot_count - 1], plant_image)
+                        background.paste(pot, pot_positions[slot_count - 1], pot)
                     grow_time_text = ""
                     if grow_time <= 0:
                         grow_time_text = "(Fully Grown!)"
