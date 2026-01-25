@@ -338,4 +338,6 @@ class GardenBackend(Database):
             planted_time = result.scalar_one_or_none()
             grow_time = await self.get_grown_time(plant_id=plant_id)
             planted_time = int(((planted_time + grow_time) - datetime.now().timestamp()) / 60) # Convert to minutes
+            if planted_time < 0:
+                planted_time = 0
             return planted_time
