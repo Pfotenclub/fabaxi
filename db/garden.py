@@ -314,7 +314,7 @@ class GardenBackend(Database):
         
     async def get_plant_grown_time(self, user_id: int, guild_id: int, plant_id: int, slot: str):
         """
-        Gets the grown time of a plant from a specific slot in the user's greenhouse.
+        Gets the remaining grown time for a plant in a specific slot in the user's greenhouse.
         Value will be returned in minutes
         
         :param user_id: User ID from User to get plant grown time for
