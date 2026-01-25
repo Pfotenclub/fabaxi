@@ -15,8 +15,12 @@ load_dotenv()
 environment = os.getenv("ENVIRONMENT")
 slots = ["slot1", "slot2", "slot3", "slot4", "slot5"]
 slot_costs = [500, 2000, 5000, 10000, 20000]
-pot_positions = [(143, 308), (442, 643), (936, 398), (1348, 799), (1731, 543)]
-plant_positions= [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
+#pot_positions = [(143, 308), (442, 643), (936, 398), (1348, 799), (1731, 543)]
+#plant_positions= [(50, 100), (0, 0), (0, 0), (0, 0), (0, 0)]
+import json
+import os
+
+
 
 class GardenCommands(commands.Cog):
     def __init__(self, bot):
@@ -163,6 +167,13 @@ class GardenCommands(commands.Cog):
         background = Image.open("./ext/images/greenhouse_base.png").convert("RGBA")
         img_bytes = io.BytesIO()
         slot_count = 0
+        # Positions where the pots will be pasted in the greenhouse image
+                    # Only for testing purposes to not restart the bot after every change, will be replaced with real positions later
+        with open(os.path.join(os.path.dirname(__file__), "positions.json"), "r", encoding='utf-8') as file:
+            positions = json.load(file)
+        pot_positions = positions["pot_positions"]
+        plant_positions = positions["plant_positions"]
+        plant_grown_positions = positions["plant_grown_positions"]
         for user in greenhouse:
             for slot in slots:
                 slot_count += 1
@@ -192,22 +203,13 @@ class GardenCommands(commands.Cog):
                         background.paste(pot, pot_positions[slot_count - 1], pot)
                     elif grow_time == 0: # Stage 4 (fully grown)
                         pot = Image.open("./ext/images/pot_empty.png").convert("RGBA")
-                        plant_image = Image.open(f"./ext/images/plants/plant_{plant_id}.png").convert("RGBA")
-                        pot.paste(plant_image, plant_positions[slot_count - 1], plant_image)
+                        plant_image_path = f"./ext/images/plants/plant_{plant_id}.png"
+                        plant_image = Image.open(plant_image_path).convert("RGBA")
+                        pot.paste(plant_image, plant_grown_positions[slot_count - 1], plant_image)
                         background.paste(pot, pot_positions[slot_count - 1], pot)
-                    grow_time_text = ""
-                    if grow_time <= 0:
-                        grow_time_text = "(Fully Grown!)"
-                    elif grow_time > 60:
-                        grow_time_hours = grow_time // 60
-                        grow_time_minutes = grow_time % 60
-                        if grow_time_hours > 24:
-                            grow_time_days = grow_time_hours // 24
-                            grow_time_hours = grow_time_hours % 24
-                            grow_time_text = f"(Grows in {grow_time_days} day{'s' if grow_time_days > 1 else ''}, {grow_time_hours} hour{'s' if grow_time_hours != 1 else ''}, {grow_time_minutes} minute{'s' if grow_time_minutes != 1 else ''})"
-                        else:
-                            grow_time_text = f"(Grows in {grow_time_hours} hour{'s' if grow_time_hours != 1 else ''}, {grow_time_minutes} minute{'s' if grow_time_minutes != 1 else ''})"
-                    embed.description += f"\n**Slot {slot_count}:** {await GardenBackend().get_plant_name(plant_id=plant_id)} {grow_time_text}"
+                    grow_time_text = format_grow_time(grow_time // 60)
+                    
+                    embed.description += f"\n**Slot {slot_count}:** {await GardenBackend().get_plant_name(plant_id=plant_id)} ({grow_time_text})"
         
         background.save(img_bytes, format='PNG')
         img_bytes.seek(0)
@@ -307,3 +309,18 @@ class GardenCommands(commands.Cog):
 
 def setup(bot):
     bot.add_cog(GardenCommands(bot))
+
+def format_grow_time(minutes: int) -> str:
+    if minutes <= 0:
+        return "Fully Grown"
+    days = minutes // (24 * 60)
+    hours = (minutes % (24 * 60)) // 60
+    mins = minutes % 60
+    parts = []
+    if days:
+        parts.append(f"{days} Day{'s' if days != 1 else ''}")
+    if hours:
+        parts.append(f"{hours} Hour{'s' if hours != 1 else ''}")
+    if mins:
+        parts.append(f"{mins} Minute{'s' if mins != 1 else ''}")
+    return ", ".join(parts)
