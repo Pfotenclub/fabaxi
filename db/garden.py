@@ -45,6 +45,27 @@ class GardenBackend(Database):
         await session.execute(stmt)
         await session.commit()
     
+    async def upgrade_greenhouse(self, user_id: int, guild_id: int, slot: str):
+        """
+        Upgrades the user's greenhouse by unlocking a new slot.
+        Does not check if the slot is already unlocked and will not remove balance for the upgrade.
+        
+        :param user_id: User ID from User to upgrade greenhouse for
+        :param guild_id: Guild ID from Guild to upgrade greenhouse for
+        :param slot: Slot column name in greenhouse to unlock, possible values: slot2, slot3, slot4, slot5
+        """
+        slot_column = f"{slot}"
+        
+        async with self.get_session() as session:
+            stmt = update(GardenGreenhouseTable).where(
+                (GardenGreenhouseTable.user_id == user_id) &
+                (GardenGreenhouseTable.guild_id == guild_id)
+            ).values(
+                **{slot_column: 0}
+            )
+        await session.execute(stmt)
+        await session.commit()
+    
     async def plant_seed_in_greenhouse(self, user_id: int, guild_id: int, plant_id: int, slot: str):
         """
         Plants a seed in a specific slot in the user's greenhouse.
