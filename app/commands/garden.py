@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 environment = os.getenv("ENVIRONMENT")
 slots = ["slot1", "slot2", "slot3", "slot4", "slot5"]
+slot_costs = [500, 2000, 5000, 10000, 20000]
 pot_positions = [(143, 308), (442, 643), (936, 398), (1348, 799), (1731, 543)]
 plant_positions= [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]
 
@@ -47,15 +48,21 @@ class GardenCommands(commands.Cog):
         await ctx.defer()
         # Showing the shop if no plant is specified
         greenhouse = await GardenBackend().get_greenhouse_from_user(user_id=ctx.author.id, guild_id=ctx.guild.id)
+        embed: discord.Embed = await default_embed(ctx.author, fact=False)
+        embed.title = "Garden Shop"
+        embed.set_thumbnail(url="https://img.icons8.com/fluency/48/online-shop-shopping-bag.png")
         if not plant:
-            embed: discord.Embed = await default_embed(ctx.author, fact=False)
-            embed.title = "Garden Shop"
             embed.description = "Here are the available seeds you can buy:"
-            embed.set_thumbnail(url="https://img.icons8.com/fluency/48/online-shop-shopping-bag.png")
             embed.set_footer(text="To buy seeds, use the /garden shop command with your desired plant.")
             plants = await GardenBackend().get_all_plants()
             if not greenhouse:
-                embed.description += "\n**Greenhouse** - 500 coins (You need a greenhouse to plant seeds!)"
+                embed.description += f"\n**Greenhouse** - {slot_costs[0]} coins (You need a greenhouse to plant seeds!)"
+            slot_count = 0
+            for slot in slots:
+                if getattr(greenhouse[0], slot) == -1:
+                    embed.description += f"\n**Upgrade Greenhouse** - Increases your greenhouse slots to {slots.index(slot)+1} ({slot_costs[slot_count]} coins)"
+                    break
+                slot_count += 1
             for plant in plants:
                 plant_name = plant.name
                 plant_description = plant.description
@@ -67,28 +74,46 @@ class GardenCommands(commands.Cog):
             selected_plant = None
             if plant.lower() == "greenhouse":
                 if greenhouse:
-                    embed: discord.Embed = await default_embed(ctx.author, fact=False)
-                    embed.title = "Garden Shop"
                     embed.description = "You already own a greenhouse! You don't need to buy another one."
-                    embed.set_thumbnail(url="https://img.icons8.com/fluency/48/online-shop-shopping-bag.png")
                     embed.set_footer(text="Use /garden greenhouse to manage your greenhouse.")
                     return await ctx.respond(embed=embed)
                 user_balance = await EconomyBackend().get_balance(user_id=ctx.author.id, guild_id=ctx.guild.id)
                 if user_balance < 500:
-                    embed: discord.Embed = await default_embed(ctx.author, fact=False)
-                    embed.title = "Garden Shop"
                     embed.description = f"You do not have enough coins to buy a greenhouse."
-                    embed.set_thumbnail(url="https://img.icons8.com/fluency/48/online-shop-shopping-bag.png")
                     embed.set_footer(text="Get money or something, and stop being poor. Tried just havin money?")
                     return await ctx.respond(embed=embed)
                 await GardenBackend().create_greenhouse(user_id=ctx.author.id, guild_id=ctx.guild.id)
                 await EconomyBackend().remove_balance(user_id=ctx.author.id, guild_id=ctx.guild.id, amount=500)
-                embed: discord.Embed = await default_embed(ctx.author, fact=False)
-                embed.title = "Garden Shop"
                 embed.description = f"*Beep* Greenhouse purchased successfully!"
-                embed.set_thumbnail(url="https://img.icons8.com/fluency/48/online-shop-shopping-bag.png")
                 embed.set_footer(text="Use /garden greenhouse to manage your greenhouse.")
                 return await ctx.respond(embed=embed)
+            if plant.lower() == "upgrade greenhouse":
+                if not greenhouse:
+                    embed.description = "You don't have a greenhouse to upgrade! Buy one first from the /garden shop."
+                    await ctx.respond(embed=embed)
+                    return
+                upgrade_slot = None
+                slot_count = 0
+                for slot in slots:
+                    if getattr(greenhouse[0], slot) == -1:
+                        upgrade_slot = slot
+                        break
+                    slot_count += 1
+                if not upgrade_slot:
+                    embed.description = "Your greenhouse is already at the maximum upgrade level!"
+                    return await ctx.respond(embed=embed)
+                upgrade_cost = slot_costs[slot_count]
+                user_balance = await EconomyBackend().get_balance(user_id=ctx.author.id, guild_id=ctx.guild.id)
+                if user_balance < upgrade_cost:
+                    embed.description = f"You do not have enough coins to upgrade your greenhouse."
+                    embed.set_footer(text="I've heard prostitution is a good way to make money. But that wouldn't be something for you, right? :)")
+                    return await ctx.respond(embed=embed)
+                await GardenBackend().upgrade_greenhouse(user_id=ctx.author.id, guild_id=ctx.guild.id, slot=upgrade_slot)
+                await EconomyBackend().remove_balance(user_id=ctx.author.id, guild_id=ctx.guild.id, amount=upgrade_cost)
+                embed.description = f"*Beep* Greenhouse upgraded successfully! You can now plant more seeds."
+                embed.set_footer(text="Use /garden greenhouse to manage your greenhouse.")
+                return await ctx.respond(embed=embed)
+                
             for p in all_plants:
                 if p.name.lower() == plant.lower():
                     selected_plant = p
