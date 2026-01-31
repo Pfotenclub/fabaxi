@@ -3,10 +3,27 @@ from datetime import date
 from sqlalchemy import insert, select, delete, update
 
 from db import Database
-from db.tables import EconomyTable
+from db.tables import EconomyTable, EconomyShopTable, EconomyInventoryTable
 
 
 class EconomyBackend(Database):
+
+    async def buy_item(self, user_id: int, guild_id: int, item_id: int):
+        """
+        Adds an item to a user's economy inventory.
+        
+        :param user_id: User ID to add item for
+        :param guild_id: Guild ID to add item for
+        :param item_id: Item ID to add
+        """
+        async with self.get_session() as session:
+            stmt = insert(EconomyInventoryTable).values(
+                user_id=user_id,
+                guild_id=guild_id,
+                item_id=item_id
+            )
+            await session.execute(stmt)
+            await session.commit()
 
     async def add_balance(self, user_id: int, guild_id: int, amount: int):
         """
@@ -77,7 +94,17 @@ class EconomyBackend(Database):
                 .order_by(EconomyTable.balance.desc())
             )
             return records.scalars().all()
-        
+
+    async def get_all_shop_items(self):
+        """
+        Get all shop items.
+        :param self: Bot instance
+        """
+        async with self.get_session() as session:
+            items = await session.execute(
+                select(EconomyShopTable)
+            )
+            return items.scalars().all()
     async def get_balance(self, user_id: int, guild_id: int):
         """
         Get economy record for a specific user in a guild.

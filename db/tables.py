@@ -37,6 +37,42 @@ class EconomyTable(Base):
 
     def dump(self):
         return dict([(k, v) for k, v in vars(self).items() if not k.startswith('_')])
+
+class EconomyShopTable(Base):
+    __tablename__ = "economy_shop"
+    item_id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    description = Column(String(255), nullable=False)
+    cost = Column(Integer, nullable=False)
+    picture_url = Column(String(255), nullable=False)
+
+    def __init__(self, item_id, name, description, cost, picture_url=None):
+        super().__init__()
+        self.item_id = item_id
+        self.name = name
+        self.description = description
+        self.cost = cost
+        self.picture_url = picture_url
+
+    def dump(self):
+        return dict([(k, v) for k, v in vars(self).items() if not k.startswith('_')])
+
+class EconomyInventoryTable(Base):
+    __tablename__ = "economy_inventory"
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    user_id = Column(BigInteger, nullable=False)
+    guild_id = Column(BigInteger, nullable=False)
+    item_id = Column(Integer, ForeignKey("economy_shop.item_id"), nullable=False)
+
+    def __init__(self, user_id, guild_id, item_id, quantity):
+        super().__init__()
+        self.user_id = user_id
+        self.guild_id = guild_id
+        self.item_id = item_id
+        self.quantity = quantity
+
+    def dump(self):
+        return dict([(k, v) for k, v in vars(self).items() if not k.startswith('_')])
     
 class GardenBaseTable(Base):
     __tablename__ = "garden_base"
