@@ -59,7 +59,7 @@ class EconomyShopTable(Base):
 
 class EconomyInventoryTable(Base):
     __tablename__ = "economy_inventory"
-    id = Column(BigInteger, autoincrement=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, nullable=False)
     guild_id = Column(BigInteger, nullable=False)
     item_id = Column(Integer, ForeignKey("economy_shop.item_id"), nullable=False)
