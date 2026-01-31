@@ -45,6 +45,27 @@ class GardenBackend(Database):
         await session.execute(stmt)
         await session.commit()
     
+    async def upgrade_greenhouse(self, user_id: int, guild_id: int, slot: str):
+        """
+        Upgrades the user's greenhouse by unlocking a new slot.
+        Does not check if the slot is already unlocked and will not remove balance for the upgrade.
+        
+        :param user_id: User ID from User to upgrade greenhouse for
+        :param guild_id: Guild ID from Guild to upgrade greenhouse for
+        :param slot: Slot column name in greenhouse to unlock, possible values: slot2, slot3, slot4, slot5
+        """
+        slot_column = f"{slot}"
+        
+        async with self.get_session() as session:
+            stmt = update(GardenGreenhouseTable).where(
+                (GardenGreenhouseTable.user_id == user_id) &
+                (GardenGreenhouseTable.guild_id == guild_id)
+            ).values(
+                **{slot_column: 0}
+            )
+        await session.execute(stmt)
+        await session.commit()
+    
     async def plant_seed_in_greenhouse(self, user_id: int, guild_id: int, plant_id: int, slot: str):
         """
         Plants a seed in a specific slot in the user's greenhouse.
@@ -293,7 +314,7 @@ class GardenBackend(Database):
         
     async def get_plant_grown_time(self, user_id: int, guild_id: int, plant_id: int, slot: str):
         """
-        Gets the grown time of a plant from a specific slot in the user's greenhouse.
+        Gets the remaining grown time for a plant in a specific slot in the user's greenhouse.
         Value will be returned in minutes
         
         :param user_id: User ID from User to get plant grown time for
@@ -317,4 +338,6 @@ class GardenBackend(Database):
             planted_time = result.scalar_one_or_none()
             grow_time = await self.get_grown_time(plant_id=plant_id)
             planted_time = int(((planted_time + grow_time) - datetime.now().timestamp()) / 60) # Convert to minutes
+            if planted_time < 0:
+                planted_time = 0
             return planted_time

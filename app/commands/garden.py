@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 import os
 from datetime import datetime
+from PIL import Image
+import io
 
 from db.economy import EconomyBackend
 from db.garden import GardenBackend
@@ -12,6 +14,13 @@ from dotenv import load_dotenv
 load_dotenv()
 environment = os.getenv("ENVIRONMENT")
 slots = ["slot1", "slot2", "slot3", "slot4", "slot5"]
+slot_costs = [500, 2000, 5000, 10000, 20000]
+#pot_positions = [(143, 308), (442, 643), (936, 398), (1348, 799), (1731, 543)]
+#plant_positions= [(50, 100), (0, 0), (0, 0), (0, 0), (0, 0)]
+import json
+import os
+
+
 
 class GardenCommands(commands.Cog):
     def __init__(self, bot):
@@ -43,15 +52,21 @@ class GardenCommands(commands.Cog):
         await ctx.defer()
         # Showing the shop if no plant is specified
         greenhouse = await GardenBackend().get_greenhouse_from_user(user_id=ctx.author.id, guild_id=ctx.guild.id)
+        embed: discord.Embed = await default_embed(ctx.author, fact=False)
+        embed.title = "Garden Shop"
+        embed.set_thumbnail(url="https://img.icons8.com/fluency/48/online-shop-shopping-bag.png")
         if not plant:
-            embed: discord.Embed = await default_embed(ctx.author, fact=False)
-            embed.title = "Garden Shop"
             embed.description = "Here are the available seeds you can buy:"
-            embed.set_thumbnail(url="https://img.icons8.com/fluency/48/online-shop-shopping-bag.png")
             embed.set_footer(text="To buy seeds, use the /garden shop command with your desired plant.")
             plants = await GardenBackend().get_all_plants()
             if not greenhouse:
-                embed.description += "\n**Greenhouse** - 500 coins (You need a greenhouse to plant seeds!)"
+                embed.description += f"\n**Greenhouse** - {slot_costs[0]} coins (You need a greenhouse to plant seeds!)"
+            slot_count = 0
+            for slot in slots:
+                if getattr(greenhouse[0], slot) == -1:
+                    embed.description += f"\n**Upgrade Greenhouse** - Increases your greenhouse slots to {slots.index(slot)+1} ({slot_costs[slot_count]} coins)"
+                    break
+                slot_count += 1
             for plant in plants:
                 plant_name = plant.name
                 plant_description = plant.description
@@ -63,28 +78,46 @@ class GardenCommands(commands.Cog):
             selected_plant = None
             if plant.lower() == "greenhouse":
                 if greenhouse:
-                    embed: discord.Embed = await default_embed(ctx.author, fact=False)
-                    embed.title = "Garden Shop"
                     embed.description = "You already own a greenhouse! You don't need to buy another one."
-                    embed.set_thumbnail(url="https://img.icons8.com/fluency/48/online-shop-shopping-bag.png")
                     embed.set_footer(text="Use /garden greenhouse to manage your greenhouse.")
                     return await ctx.respond(embed=embed)
-                user_balance = await EconomyBackend().get_economy_record(user_id=ctx.author.id, guild_id=ctx.guild.id)
-                if not user_balance or user_balance.balance < 500:
-                    embed: discord.Embed = await default_embed(ctx.author, fact=False)
-                    embed.title = "Garden Shop"
+                user_balance = await EconomyBackend().get_balance(user_id=ctx.author.id, guild_id=ctx.guild.id)
+                if user_balance < 500:
                     embed.description = f"You do not have enough coins to buy a greenhouse."
-                    embed.set_thumbnail(url="https://img.icons8.com/fluency/48/online-shop-shopping-bag.png")
                     embed.set_footer(text="Get money or something, and stop being poor. Tried just havin money?")
                     return await ctx.respond(embed=embed)
                 await GardenBackend().create_greenhouse(user_id=ctx.author.id, guild_id=ctx.guild.id)
                 await EconomyBackend().remove_balance(user_id=ctx.author.id, guild_id=ctx.guild.id, amount=500)
-                embed: discord.Embed = await default_embed(ctx.author, fact=False)
-                embed.title = "Garden Shop"
                 embed.description = f"*Beep* Greenhouse purchased successfully!"
-                embed.set_thumbnail(url="https://img.icons8.com/fluency/48/online-shop-shopping-bag.png")
                 embed.set_footer(text="Use /garden greenhouse to manage your greenhouse.")
                 return await ctx.respond(embed=embed)
+            if plant.lower() == "upgrade greenhouse":
+                if not greenhouse:
+                    embed.description = "You don't have a greenhouse to upgrade! Buy one first from the /garden shop."
+                    await ctx.respond(embed=embed)
+                    return
+                upgrade_slot = None
+                slot_count = 0
+                for slot in slots:
+                    if getattr(greenhouse[0], slot) == -1:
+                        upgrade_slot = slot
+                        break
+                    slot_count += 1
+                if not upgrade_slot:
+                    embed.description = "Your greenhouse is already at the maximum upgrade level!"
+                    return await ctx.respond(embed=embed)
+                upgrade_cost = slot_costs[slot_count]
+                user_balance = await EconomyBackend().get_balance(user_id=ctx.author.id, guild_id=ctx.guild.id)
+                if user_balance < upgrade_cost:
+                    embed.description = f"You do not have enough coins to upgrade your greenhouse."
+                    embed.set_footer(text="I've heard prostitution is a good way to make money. But that wouldn't be something for you, right? :)")
+                    return await ctx.respond(embed=embed)
+                await GardenBackend().upgrade_greenhouse(user_id=ctx.author.id, guild_id=ctx.guild.id, slot=upgrade_slot)
+                await EconomyBackend().remove_balance(user_id=ctx.author.id, guild_id=ctx.guild.id, amount=upgrade_cost)
+                embed.description = f"*Beep* Greenhouse upgraded successfully! You can now plant more seeds."
+                embed.set_footer(text="Use /garden greenhouse to manage your greenhouse.")
+                return await ctx.respond(embed=embed)
+                
             for p in all_plants:
                 if p.name.lower() == plant.lower():
                     selected_plant = p
@@ -96,8 +129,8 @@ class GardenCommands(commands.Cog):
                 embed.set_thumbnail(url="https://img.icons8.com/fluency/48/online-shop-shopping-bag.png")
                 embed.set_footer(text="Use /garden shop to view all available plants, or stop being dumb.")
                 return await ctx.respond(embed=embed)
-            user_balance = await EconomyBackend().get_economy_record(user_id=ctx.author.id, guild_id=ctx.guild.id)
-            if not user_balance or user_balance.balance < selected_plant.cost:
+            user_balance = await EconomyBackend().get_balance(user_id=ctx.author.id, guild_id=ctx.guild.id)
+            if user_balance < selected_plant.cost:
                 embed: discord.Embed = await default_embed(ctx.author, fact=False)
                 embed.title = "Garden Shop"
                 embed.description = f"You do not have enough coins to buy a seed of {selected_plant.name}."
@@ -130,7 +163,17 @@ class GardenCommands(commands.Cog):
             embed.description = "**You don't have a greenhouse yet. Visit the /garden shop to buy one!**"
             embed.set_footer(text="Visit the /garden shop to buy a greenhouse.")
             return await ctx.respond(embed=embed)
+        
+        background = Image.open("./ext/images/greenhouse_base.png").convert("RGBA")
+        img_bytes = io.BytesIO()
         slot_count = 0
+        # Positions where the pots will be pasted in the greenhouse image
+                    # Only for testing purposes to not restart the bot after every change, will be replaced with real positions later
+        with open(os.path.join(os.path.dirname(__file__), "positions.json"), "r", encoding='utf-8') as file:
+            positions = json.load(file)
+        pot_positions = positions["pot_positions"]
+        plant_positions = positions["plant_positions"]
+        plant_grown_positions = positions["plant_grown_positions"]
         for user in greenhouse:
             for slot in slots:
                 slot_count += 1
@@ -138,24 +181,39 @@ class GardenCommands(commands.Cog):
                 if plant_id == -1: break
                 if plant_id == 0:
                     embed.description += f"\n**Slot {slot_count}:** Empty"
+                    overlay = Image.open("./ext/images/pot_empty.png").convert("RGBA")
+                    background.paste(overlay, pot_positions[slot_count - 1], overlay)
                     continue
                 else:
-                    grow_time = await GardenBackend().get_plant_grown_time(user_id=ctx.author.id, guild_id=ctx.guild.id, plant_id=plant_id, slot=slot)
-                    grow_time_text = ""
-                    if grow_time <= 0:
-                        grow_time_text = "(Fully Grown!)"
-                    elif grow_time > 60:
-                        grow_time_hours = grow_time // 60
-                        grow_time_minutes = grow_time % 60
-                        if grow_time_hours > 24:
-                            grow_time_days = grow_time_hours // 24
-                            grow_time_hours = grow_time_hours % 24
-                            grow_time_text = f"(Grows in {grow_time_days} day{'s' if grow_time_days > 1 else ''}, {grow_time_hours} hour{'s' if grow_time_hours != 1 else ''}, {grow_time_minutes} minute{'s' if grow_time_minutes != 1 else ''})"
-                        else:
-                            grow_time_text = f"(Grows in {grow_time_hours} hour{'s' if grow_time_hours != 1 else ''}, {grow_time_minutes} minute{'s' if grow_time_minutes != 1 else ''})"
-                    embed.description += f"\n**Slot {slot_count}:** {await GardenBackend().get_plant_name(plant_id=plant_id)} {grow_time_text}"
+                    grow_time = await GardenBackend().get_plant_grown_time(user_id=ctx.author.id, guild_id=ctx.guild.id, plant_id=plant_id, slot=slot) * 60 # Convert to seconds
+                    required_grow_time = await GardenBackend().get_grown_time(plant_id=plant_id)
+                    stage_ratio = required_grow_time / 3
+                    if grow_time != 0 and grow_time > stage_ratio * 2: # Stage 1 (just the empty pot)
+                        pot = Image.open("./ext/images/pot_empty.png").convert("RGBA")
+                        background.paste(pot, pot_positions[slot_count - 1], pot)
+                    elif grow_time != 0 and grow_time > stage_ratio and grow_time <= stage_ratio * 2: # Stage 2
+                        pot = Image.open("./ext/images/pot_empty.png").convert("RGBA")
+                        plant_image = Image.open("./ext/images/plants/plant_stage_2.png").convert("RGBA")
+                        pot.paste(plant_image, plant_positions[slot_count - 1], plant_image)
+                        background.paste(pot, pot_positions[slot_count - 1], pot)
+                    elif grow_time != 0 and grow_time <= stage_ratio and grow_time > 0: # Stage 3
+                        pot = Image.open("./ext/images/pot_empty.png").convert("RGBA")
+                        plant_image = Image.open("./ext/images/plants/plant_stage_3.png").convert("RGBA")
+                        pot.paste(plant_image, plant_positions[slot_count - 1], plant_image)
+                        background.paste(pot, pot_positions[slot_count - 1], pot)
+                    elif grow_time == 0: # Stage 4 (fully grown)
+                        pot = Image.open("./ext/images/pot_empty.png").convert("RGBA")
+                        plant_image_path = f"./ext/images/plants/plant_{plant_id}.png"
+                        plant_image = Image.open(plant_image_path).convert("RGBA")
+                        pot.paste(plant_image, plant_grown_positions[slot_count - 1], plant_image)
+                        background.paste(pot, pot_positions[slot_count - 1], pot)
+                    grow_time_text = format_grow_time(grow_time // 60)
+                    
+                    embed.description += f"\n**Slot {slot_count}:** {await GardenBackend().get_plant_name(plant_id=plant_id)} ({grow_time_text})"
         
-        file = discord.File(fp="./ext/images/greenhouse_base.png", filename="greenhouse_base.png")
+        background.save(img_bytes, format='PNG')
+        img_bytes.seek(0)
+        file = discord.File(img_bytes, filename="greenhouse_base.png")
         embed.set_image(url="attachment://greenhouse_base.png")
         await ctx.respond(embed=embed, file=file)
 
@@ -251,3 +309,18 @@ class GardenCommands(commands.Cog):
 
 def setup(bot):
     bot.add_cog(GardenCommands(bot))
+
+def format_grow_time(minutes: int) -> str:
+    if minutes <= 0:
+        return "Fully Grown"
+    days = minutes // (24 * 60)
+    hours = (minutes % (24 * 60)) // 60
+    mins = minutes % 60
+    parts = []
+    if days:
+        parts.append(f"{days} Day{'s' if days != 1 else ''}")
+    if hours:
+        parts.append(f"{hours} Hour{'s' if hours != 1 else ''}")
+    if mins:
+        parts.append(f"{mins} Minute{'s' if mins != 1 else ''}")
+    return ", ".join(parts)
