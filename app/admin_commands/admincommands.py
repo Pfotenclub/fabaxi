@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import os
 import json
+from ext.system import is_owner
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -14,16 +15,8 @@ class AdminCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-
-    @discord.slash_command(name="fuckoff")
-    @commands.is_owner()
-    async def fuckoff(self, ctx):
-
-        await ctx.respond("Shutting down the bot. Goodbye!")
-        await self.bot.close()
-
     @commands.command(name="role-colors")
-    @commands.is_owner()
+    @is_owner()
     async def roleColors(self, ctx: commands.context):
         roleJson = None
         with open(os.path.join(data_path, "rolecolors.json"), "r", encoding='utf-8') as file: roleJson = json.load(file)
@@ -48,6 +41,38 @@ class AdminCommands(commands.Cog):
             json.dump(data, file, ensure_ascii=False, indent=4)
             file.truncate()
 
+        await ctx.message.delete()
+    
+    @commands.command(name="rules")
+    @is_owner()
+    async def rules(self, ctx: commands.context):
+        picture_embed = discord.Embed()
+        file = discord.File(fp="./ext/images/rules.png", filename="rules.png")
+        picture_embed.set_image(url="attachment://rules.png")
+        picture_embed.color = 0x1abc9c
+
+        rules_embed = discord.Embed(title="Official Pfotenclub rules", description="Under the loving dictatorship of Muffin and Wolfiii")
+        rules_embed.color = 0x1abc9c
+        rules_embed.add_field(name="1. Respect", value="Respect other members... or at least pretend to. We want to keep drama to a minimum, so please make an effort to be polite and considerate.", inline=False)
+        rules_embed.add_field(name="2. Spamming", value="Spamming is strictly forbidden... unless you have really good memes. In that case, please forward them to the server management for quality control.", inline=False)
+        rules_embed.add_field(name="3. NSFW", value="NSFW content is strictly limited to the Pfoten Nightclub category. If you want access, request approval in #approval. No approval, no entry – keep it clean everywhere else!", inline=False)
+        rules_embed.add_field(name="4. Bots", value="Don’t be a bot. We’re not against automation, but if you don’t have a soul, you’re in the wrong place. (This also applies to Muffin.)", inline=False)
+        rules_embed.add_field(name="5. Recognizement of Poland", value="We tried being bad neighbors once – didn’t end well. So here’s the deal: We recognize the Polish Border and the sovereignty of it's state, and we’re not opening that chapter again.", inline=False)
+        rules_embed.add_field(name="6. Furry Pride", value="This Server consists of Furrys (NO WAY! WAHT!?), so expect a lot of fur here :3 If you have smth against furrys, then why the heck are you even here?", inline=False)
+        rules_embed.add_field(name="7. Criticism of the Admins", value="Criticism of Muffin and Wolfiii is welcome – and will be promptly discarded. Complaint hotline: 0800-WE-DONT-CARE.", inline=False)
+        rules_embed.add_field(name="8. Activity", value="We are a 'bit too big friend group', so please try to be active and engage with the community. Everything on here works on a baseline of trust.", inline=False)
+        rules_embed.add_field(name="9. Farewells", value="Anyone leaving the server must deliver an emotional farewell speech. Tears are optional, but we expect at least a PowerPoint presentation of your best moments. (licence not sponsored)", inline=False)
+        rules_embed.add_field(name="10. Birth", value="PLEASE DO NOT give birth. No, seriously. The burgeramt is already overworked, and adding “midwife” to their duties isn’t on the table.", inline=False)
+        rules_embed.add_field(name="11. Kissing", value="Under all circumstances, DO NOT KISS BOYS AS A BOY.\n350€ penatly that goes into the boykisser coffers.", inline=False)
+        rules_embed.add_field(name="12. Have fun!", value="This is the most important rule. If you’re not having fun, you’re doing it wrong.", inline=False)
+
+        await ctx.send("Hey and Welcome to Pfotenclub! Your new cult rom now on :3\n\nBefore you can start socializing (eek-, thats that >->?), here are the rules of this server.\n" \
+        "Please read them carefully and follow them, so we can all have a good time together! If you have any questions, feel free to ask the admins or moderators. Enjoy your stay! :3" \
+        "\n\n**P.S.** If you want to get access to the NSFW channels, please request approval in #approval and wait for an admin to approve you. Thanks!" \
+        "\n**P.P.S.** If you want to change your role color, react to the message in #chat-color with the color you want! If you want to remove your role color, react with ❌" \
+        "\n**P.P.P.S.** Even though the rules are written in a humorous way, we take them seriously. Please follow them to ensure a fun and respectful environment for everyone. Thanks for being part of the Pfotenclub community! ^w^")
+        await ctx.send(file=file, embed=picture_embed)
+        await ctx.send(embed=rules_embed)
         await ctx.message.delete()
 
     @discord.Cog.listener("on_raw_reaction_add")
