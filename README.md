@@ -1,6 +1,7 @@
 # Fabaxi
 
 Hi! I'm Fabaxi, your Pfotenclub Companion 😊
+I will assist you in the Pfotenclub Discord Server with various features and fun activities. I'm here to make your experience more enjoyable and engaging!
 
 ## What do I do?
 
