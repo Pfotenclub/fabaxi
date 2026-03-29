@@ -120,7 +120,7 @@ class Karma(commands.Cog):
     async def leaderboard(self, ctx):
         """Displays the leaderboard for the server."""
         await ctx.defer()
-        embed = default_embed(user=ctx.author, fact=True)
+        embed = await default_embed(user=ctx.author, fact=True)
         embed.title = "Karma Leaderboard"
         top_users = await UserKarma().get_karma_leaderboard(ctx.guild.id, 10)
 
