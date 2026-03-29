@@ -55,7 +55,7 @@ class AdminCommands(commands.Cog):
         rules_embed.color = 0x1abc9c
         rules_embed.add_field(name="1. Respect", value="Respect other members... or at least pretend to. We want to keep drama to a minimum, so please make an effort to be polite and considerate.", inline=False)
         rules_embed.add_field(name="2. Spamming", value="Spamming is strictly forbidden... unless you have really good memes. In that case, please forward them to the server management for quality control.", inline=False)
-        rules_embed.add_field(name="3. NSFW", value="NSFW content is strictly limited to the Pfoten Nightclub category. If you want access, request approval in #approval. No approval, no entry – keep it clean everywhere else!", inline=False)
+        rules_embed.add_field(name="3. NSFW", value="NSFW content is strictly limited to the Pfoten Nightclub category. If you want access, request approval in <#1310668407871508530>. No approval, no entry – keep it clean everywhere else!", inline=False)
         rules_embed.add_field(name="4. Bots", value="Don’t be a bot. We’re not against automation, but if you don’t have a soul, you’re in the wrong place. (This also applies to Muffin.)", inline=False)
         rules_embed.add_field(name="5. Recognizement of Poland", value="We tried being bad neighbors once – didn’t end well. So here’s the deal: We recognize the Polish Border and the sovereignty of it's state, and we’re not opening that chapter again.", inline=False)
         rules_embed.add_field(name="6. Furry Pride", value="This Server consists of Furrys (NO WAY! WAHT!?), so expect a lot of fur here :3 If you have smth against furrys, then why the heck are you even here?", inline=False)
@@ -68,8 +68,8 @@ class AdminCommands(commands.Cog):
 
         await ctx.send("Hey and Welcome to Pfotenclub! Your new cult rom now on :3\n\nBefore you can start socializing (eek-, thats that >->?), here are the rules of this server.\n" \
         "Please read them carefully and follow them, so we can all have a good time together! If you have any questions, feel free to ask the admins or moderators. Enjoy your stay! :3" \
-        "\n\n**P.S.** If you want to get access to the NSFW channels, please request approval in #approval and wait for an admin to approve you. Thanks!" \
-        "\n**P.P.S.** If you want to change your role color, react to the message in #chat-color with the color you want! If you want to remove your role color, react with ❌" \
+        "\n\n**P.S.** If you want to get access to the NSFW channels, please request approval in <1310668407871508530> and wait for an admin to approve you. Thanks!" \
+        "\n**P.P.S.** If you want to change your role color, react to the message in <#1341782920972603453> with the color you want! If you want to remove your role color, react with ❌" \
         "\n**P.P.P.S.** Even though the rules are written in a humorous way, we take them seriously. Please follow them to ensure a fun and respectful environment for everyone. Thanks for being part of the Pfotenclub community! ^w^")
         await ctx.send(file=file, embed=picture_embed)
         await ctx.send(embed=rules_embed)
