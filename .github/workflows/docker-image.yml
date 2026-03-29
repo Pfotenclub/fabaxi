@@ -32,7 +32,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT }}
         source: image.tar
-        target: /home/chatgpaint/
+        target: /home/fabaxi/
     - name: Load Docker Image on SSH Server and Run
       uses: appleboy/ssh-action@66aa4d343bf909ac4fa0ac52f4e62a9adc354c95
       with:
@@ -41,7 +41,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT }}
         script: |
-          docker load -i /home/chatgpaint/image.tar
+          docker load -i /home/fabaxi/image.tar
           docker stop ${{ secrets.DOCKER_IMAGE_NAME }} || true
           docker rm ${{ secrets.DOCKER_IMAGE_NAME }} || true
           docker run -d \
@@ -57,5 +57,5 @@ jobs:
             -e PROD_TOKEN=${{ secrets.PROD_TOKEN }} \
             -e WEBHOOK_URL=${{ secrets.WEBHOOK_URL }} \
             -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
-            -v /home/chatgpaint/db:/db \
+            -v /home/fabaxi/db:/db \
             --name ${{ secrets.DOCKER_IMAGE_NAME }} ${{ secrets.DOCKER_IMAGE_NAME }}
