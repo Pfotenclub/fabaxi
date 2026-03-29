@@ -66,9 +66,9 @@ class AdminCommands(commands.Cog):
         rules_embed.add_field(name="11. Kissing", value="Under all circumstances, DO NOT KISS BOYS AS A BOY.\n350€ penatly that goes into the boykisser coffers.", inline=False)
         rules_embed.add_field(name="12. Have fun!", value="This is the most important rule. If you’re not having fun, you’re doing it wrong.", inline=False)
 
-        await ctx.send("Hey and Welcome to Pfotenclub! Your new cult rom now on :3\n\nBefore you can start socializing (eek-, thats that >->?), here are the rules of this server.\n" \
+        await ctx.send("Hey and Welcome to Pfotenclub! Your new cult rom now on :3\n\nBefore you can start socializing (eek-, whats that >->?), here are the rules of this server.\n" \
         "Please read them carefully and follow them, so we can all have a good time together! If you have any questions, feel free to ask the admins or moderators. Enjoy your stay! :3" \
-        "\n\n**P.S.** If you want to get access to the NSFW channels, please request approval in <1310668407871508530> and wait for an admin to approve you. Thanks!" \
+        "\n\n**P.S.** If you want to get access to the NSFW channels, please request approval in <#1310668407871508530> and wait for an admin to approve you. Thanks!" \
         "\n**P.P.S.** If you want to change your role color, react to the message in <#1341782920972603453> with the color you want! If you want to remove your role color, react with ❌" \
         "\n**P.P.P.S.** Even though the rules are written in a humorous way, we take them seriously. Please follow them to ensure a fun and respectful environment for everyone. Thanks for being part of the Pfotenclub community! ^w^")
         await ctx.send(file=file, embed=picture_embed)
