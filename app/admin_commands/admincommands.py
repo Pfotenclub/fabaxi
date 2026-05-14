@@ -3,6 +3,7 @@ from discord.ext import commands
 import os
 import json
 from ext.system import is_owner
+from ext.system import default_embed
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -14,6 +15,31 @@ elif environment == "PROD": data_path = "/db"
 class AdminCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+    @discord.slash_command(name="send-announcement-with-poll", description="Sends an announcement with a poll to the specified channel")
+    @is_owner()
+    @discord.option("text", description="The text of the announcement")
+    @discord.option("poll_text", description="The text of the poll question", required=False)
+    @discord.option("poll_options", description="The options for the poll, separated by Divider, e.g. |Option 1|Option 2|Option 3", required=False)
+    @discord.option("pinged_role", description="The role to ping in the announcement", type=discord.SlashCommandOptionType.role, required=False)
+    async def sendAnnouncementWithPoll(self, ctx: discord.ApplicationContext, text: str, poll_text: str = None, poll_options: str = None, pinged_role: discord.Role = None):
+        if pinged_role is not None:
+            text = f"{text}\n\n{pinged_role.mention}"
+        await ctx.channel.send(text)
+
+        if poll_options and poll_text:
+            options = [o.strip() for o in poll_options.split("|")]
+            poll = discord.Poll(
+                question=poll_text
+            )
+            for option in options:
+                poll.add_answer(text=option)
+            await ctx.channel.send(poll=poll)
+        
+        await ctx.respond("Announcement sent!", ephemeral=True)
+
+
+
 
     @commands.command(name="role-colors")
     @is_owner()
