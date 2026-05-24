@@ -43,7 +43,8 @@ async def on_ready():
     await Database().init_db()
     logging.info("Database initialized!")
     await send_system_message(bot=bot, content="Bot is ready and online!")
-    await change_status.start()
+    if not change_status.is_running():
+        change_status.start()
 
 @tasks.loop(hours=12)
 async def change_status():
