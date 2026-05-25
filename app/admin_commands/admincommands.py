@@ -3,7 +3,6 @@ from discord.ext import commands
 import os
 import json
 from ext.system import is_owner
-from ext.system import default_embed
 
 from dotenv import load_dotenv
 load_dotenv()
