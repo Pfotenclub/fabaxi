@@ -23,6 +23,7 @@ class AdminCommands(commands.Cog):
     @discord.option("poll_options", description="The options for the poll, separated by Divider, e.g. |Option 1|Option 2|Option 3", required=False)
     @discord.option("pinged_role", description="The role to ping in the announcement", type=discord.SlashCommandOptionType.role, required=False)
     async def sendAnnouncementWithPoll(self, ctx: discord.ApplicationContext, text: str, poll_text: str = None, poll_options: str = None, pinged_role: discord.Role = None):
+        text = text.replace("\\n", "\n")
         if pinged_role is not None:
             text = f"{text}\n\n{pinged_role.mention}"
         await ctx.channel.send(text)
