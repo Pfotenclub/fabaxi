@@ -20,8 +20,15 @@ class AdminCommands(commands.Cog):
     @discord.option("text", description="The text of the announcement")
     @discord.option("poll_text", description="The text of the poll question", required=False)
     @discord.option("poll_options", description="The options for the poll, separated by Divider, e.g. |Option 1|Option 2|Option 3", required=False)
+    @discord.option("poll_duration", description="The duration of the poll in hours. Default is 24. Max is 168 (7 days), Min is 1.", type=discord.SlashCommandOptionType.integer, required=False)
     @discord.option("pinged_role", description="The role to ping in the announcement", type=discord.SlashCommandOptionType.role, required=False)
-    async def sendAnnouncementWithPoll(self, ctx: discord.ApplicationContext, text: str, poll_text: str = None, poll_options: str = None, pinged_role: discord.Role = None):
+    async def sendAnnouncementWithPoll(self, ctx: discord.ApplicationContext, text: str, poll_text: str = None, poll_options: str = None, poll_duration: int = 24, pinged_role: discord.Role = None):
+        if poll_duration > 168:
+            await ctx.respond("Poll duration cannot be longer than 168 hours (7 days)", ephemeral=True)
+            return
+        if poll_duration < 1:
+            await ctx.respond("Poll duration cannot be less than 1 hour", ephemeral=True)
+            return
         text = text.replace("\\n", "\n")
         if pinged_role is not None:
             text = f"{text}\n\n{pinged_role.mention}"
@@ -30,7 +37,8 @@ class AdminCommands(commands.Cog):
         if poll_options and poll_text:
             options = [o.strip() for o in poll_options.split("|")]
             poll = discord.Poll(
-                question=poll_text
+                question=poll_text,
+                duration=poll_duration
             )
             for option in options:
                 poll.add_answer(text=option)
