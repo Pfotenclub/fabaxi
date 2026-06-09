@@ -2,6 +2,7 @@ import logging
 import os
 import random
 
+import aiohttp
 import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
@@ -45,6 +46,22 @@ async def on_ready():
     await send_system_message(bot=bot, content="Bot is ready and online!")
     if not change_status.is_running():
         change_status.start()
+    if not uptime_heartbeat.is_running():
+        uptime_heartbeat.start()
+
+@tasks.loop(seconds=30)
+async def uptime_heartbeat():
+    if not bot.is_ready():
+        uptime_heartbeat.stop()
+        return
+    url = os.getenv("UPTIME_KUMA_PUSH_URL")
+    if not url:
+        return
+    try:
+        async with aiohttp.ClientSession() as session:
+            await session.get(url)
+    except Exception as e:
+        logging.warning(f"Uptime Kuma heartbeat failed: {e}")
 
 @tasks.loop(hours=12)
 async def change_status():
