@@ -4,26 +4,28 @@ permissions:
   pull-requests: write
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - release
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
+    
     - name: Build the Docker image
       run: docker buildx build -t ${{ secrets.DOCKER_IMAGE_NAME }} .
-
+   
     - name: Save Docker Image as Tar
       run: docker save -o image.tar ${{ secrets.DOCKER_IMAGE_NAME }}
-
+    
     - name: Set permissions
       run: chmod 755 ./image.tar
+    
     - name: Check file existence
       run: ls -l ./image.tar
+    
     - name: Copy Docker Image to SSH Server
       uses: appleboy/scp-action@3d59448764c0f94f80ffcfea943710c44b75cb43
       with:
@@ -33,6 +35,7 @@ jobs:
         port: ${{ secrets.SSH_PORT }}
         source: image.tar
         target: /home/fabaxi/
+    
     - name: Load Docker Image on SSH Server and Run
       uses: appleboy/ssh-action@66aa4d343bf909ac4fa0ac52f4e62a9adc354c95
       with:
@@ -45,17 +48,7 @@ jobs:
           docker stop ${{ secrets.DOCKER_IMAGE_NAME }} || true
           docker rm ${{ secrets.DOCKER_IMAGE_NAME }} || true
           docker run -d \
-            -e DB_HOST=${{ secrets.DB_HOST }} \
-            -e DB_NAME=${{ secrets.DB_NAME }} \
-            -e DB_PORT=${{ secrets.DB_PORT }} \
-            -e DB_PW=${{ secrets.DB_PW }} \
-            -e DB_USER=${{ secrets.DB_USER }} \
-            -e ENVIRONMENT=${{ secrets.ENVIRONMENT }} \
-            -e JOINTOCREATEPARENT=${{ secrets.JOINTOCREATEPARENT }} \
-            -e JOINTOCREATEVOICE=${{ secrets.JOINTOCREATEVOICE }} \
-            -e PROD_SERVER=${{ secrets.PROD_SERVER }} \
-            -e PROD_TOKEN=${{ secrets.PROD_TOKEN }} \
-            -e WEBHOOK_URL=${{ secrets.WEBHOOK_URL }} \
-            -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+            --env-file /home/fabaxi/fabaxi.env \
+            --restart unless-stopped \
             -v /home/fabaxi/db:/db \
             --name ${{ secrets.DOCKER_IMAGE_NAME }} ${{ secrets.DOCKER_IMAGE_NAME }}
