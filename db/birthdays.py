@@ -17,6 +17,7 @@ class BirthdayBackend(Database):
             birthdays = records.scalars().all()
             today = date.today()
 
+            # Sort birthdays by how soon they are coming up, with the closest ones first
             def days_until_next_birthday(birthday_record):
                 try:
                     this_year_birthday = date(today.year, birthday_record.month, birthday_record.day)
