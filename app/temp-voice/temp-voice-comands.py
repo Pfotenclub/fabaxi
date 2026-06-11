@@ -195,8 +195,8 @@ class LockChannel(CooldownSetter): # Modal for locking the channel
             permissions = {interaction.guild.default_role: discord.PermissionOverwrite(connect=False), interaction.user: discord.PermissionOverwrite(connect=True)}
             await channel.edit(overwrites=permissions)  # set the permissions
             embed: discord.Embed = await default_embed()
-            embed.title="Update successful!",  # set the title
-            embed.description="Your temporary voice channel has been successfully locked!",  # set the description
+            embed.title="Update successful!"  # set the title
+            embed.description="Your temporary voice channel has been successfully locked!"  # set the description
             embed.set_thumbnail(url="https://img.icons8.com/?size=100&id=znpDNZWhQe6p&format=png&color=000000")
             await interaction.response.send_message(embed=embed, ephemeral=True)  # send the embed
 
@@ -211,8 +211,8 @@ class UnlockChannel(CooldownSetter):  # Modal for unlocking the channel
             permissions = {interaction.guild.default_role: discord.PermissionOverwrite(connect=True), }
             await channel.edit(overwrites=permissions)
             embed: discord.Embed = await default_embed()
-            embed.title="Update successful!",  # set the title
-            embed.description="Your temporary voice channel has been successfully unlocked!",  # set the description
+            embed.title="Update successful!"  # set the title
+            embed.description="Your temporary voice channel has been successfully unlocked!"  # set the description
             embed.set_thumbnail(url="https://img.icons8.com/?size=100&id=bmqc7DrIxfXZ&format=png&color=000000")
             await interaction.response.send_message(embed=embed, ephemeral=True)  # send the embed
 

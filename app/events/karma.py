@@ -27,12 +27,14 @@ class Karma(commands.Cog):
 
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if (message.author.bot or message.channel.id == 1229062537954332782 or  # commands channel
-                message.channel.id == 1337733289695514725 or  # counting channel
-                message.channel.id == 1339010562964586647 or  # cult leader channel
-                message.channel.id == 1283842433284837396  # burgeramt channel
-        ):
-            return
+        ignored_channels = [
+            1229062537954332782,  # commands channel
+            1337733289695514725,  # counting channel
+            1339010562964586647,  # cult leader channel
+            1462546344064586031,  # guess the number channel
+            1283842433284837396,  # burgeramt channel
+        ]
+        if (message.author.bot or message.channel.id in ignored_channels): return
 
         await UserKarma().handle_message_karma(user_id=message.author.id, guild_id=message.guild.id,
             timestamp=message.created_at.timestamp(), )
