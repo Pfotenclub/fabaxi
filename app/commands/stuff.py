@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta, time
 
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands, pages, tasks
 from ext.system import default_embed
 
 from db import Database
@@ -106,7 +106,7 @@ class Stuff(commands.Cog):
         if user is None:
             user = ctx.author
         if user.bot: return await ctx.respond("Bots don't have birthdays.")
-        embed: discord.Embed = await default_embed(user=user)
+        embed: discord.Embed = await default_embed()
         embed.title = f"{user.display_name}'s Birthday"
         if user.avatar: embed.set_thumbnail(url=user.avatar.url)
         try:
@@ -127,32 +127,47 @@ class Stuff(commands.Cog):
         except Exception as e:
             embed.description = "An error occurred. Please try again later."
             print(e)
-        if user.color != discord.Color.default(): embed.color = user.color
-        else: embed.color = 0x1abc9c
         await ctx.respond(embed=embed)
 
     @birthdayCommandGroup.command(name="list", description="List all birthdays in the server.", contexts={discord.InteractionContextType.guild})
     async def listBirthdays(self, ctx):
-        embed: discord.Embed = await default_embed(user=ctx.author)
-        embed.title = "Birthdays in this server"
-
         try:
             birthdays = await BirthdayBackend().get_all_birthdays(ctx.guild.id)
             if not birthdays:
+                embed: discord.Embed = await default_embed()
+                embed.title = "Birthdays in this server"
                 embed.description = "No birthdays set in this server."
-            else:
-                for birthday in birthdays:
+                return await ctx.respond(embed=embed)
+
+            PAGE_SIZE = 7
+            page_list = []
+            for i in range(0, len(birthdays), PAGE_SIZE):
+                chunk = birthdays[i:i + PAGE_SIZE]
+                embed: discord.Embed = await default_embed()
+                embed.title = "Birthdays in this server"
+                for birthday in chunk:
                     user = ctx.guild.get_member(birthday.user_id)
-                    if user:
-                        birthday_date = date(birthday.year, birthday.month, birthday.day)
-                        if birthday.year == 1900:
-                            embed.add_field(name=f"{user.display_name}'s Birthday", value=f"{birthday_date.day}. {birthday_date.strftime('%B')}", inline=False)
-                        else:
-                            embed.add_field(name=f"{user.display_name}'s Birthday", value=f"{birthday_date.day}. {birthday_date.strftime('%B')} {birthday_date.year}", inline=False)
+                    if not user:
+                        continue
+                    birthday_date = date(birthday.year, birthday.month, birthday.day)
+                    if birthday.year == 1900:
+                        value = f"{birthday_date.day}. {birthday_date.strftime('%B')}"
+                    else:
+                        value = f"{birthday_date.day}. {birthday_date.strftime('%B')} {birthday_date.year}"
+                    embed.add_field(name=f"{user.display_name}'s Birthday", value=value, inline=False)
+                page_list.append(embed)
+
+            if len(page_list) == 1:
+                await ctx.respond(embed=page_list[0])
+            else:
+                paginator = pages.Paginator(pages=page_list)
+                await paginator.respond(ctx.interaction)
         except Exception as e:
+            embed: discord.Embed = await default_embed()
+            embed.title = "Birthdays in this server"
             embed.description = "An error occurred while fetching birthdays. Please try again later."
             print(e)
-        await ctx.respond(embed=embed)
+            await ctx.respond(embed=embed)
 ##############################################################
 def setup(bot):  # this is called by Pycord to setup the cog
     bot.add_cog(Stuff(bot))  # add the cog to the bot
