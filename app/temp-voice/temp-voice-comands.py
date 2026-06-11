@@ -119,7 +119,7 @@ class RenameChannel(discord.ui.Modal):  # Modal for renaming the channel
                     await channel.edit(
                         name=f"🔊・{interaction.user.display_name}'s Channel")  # set the name to the default name
 
-                embed: discord.Embed = await default_embed(interaction.user)
+                embed: discord.Embed = await default_embed()
                 embed.title="Update successful!"  # set the title
                 embed.description=f"Your channel is now named {channel.name}!"  # set the description
                 embed.set_thumbnail(url="https://img.icons8.com/?size=100&id=oJQSZNne5Rp0&format=png&color=000000")
@@ -153,7 +153,7 @@ class LimitChannel(discord.ui.Modal):  # Modal for setting the user limit
         else:
             return await interaction.response.send_message("Please enter a valid number! (1 - 99)",
                                                            ephemeral=True)  # send a message that the value is not a number
-        embed: discord.Embed = await default_embed(interaction.user)
+        embed: discord.Embed = await default_embed()
         embed.title="Update successful!"  # set the title
         embed.description=f"Your channel now has a limit of {channel.user_limit}!"  # set the description
         embed.set_thumbnail(url="https://img.icons8.com/?size=100&id=2v99zq45tmel&format=png&color=000000")
@@ -178,7 +178,7 @@ class ClaimChannel(CooldownSetter): # Modal for claiming the channel
 
         await interaction.user.voice.channel.edit(name=f"🔊・{interaction.user.display_name}'s Channel")  # set the name of the channel to the member's name
 
-        embed: discord.Embed = await default_embed(interaction.user)
+        embed: discord.Embed = await default_embed()
         embed.title="Temporary voice channel claimed!"  # set the title
         embed.description="You have successfully claimed the temporary voice channel!"  # set the description
         embed.set_thumbnail(url="https://img.icons8.com/?size=100&id=2HUccuweutbu&format=png&color=000000")
@@ -194,7 +194,7 @@ class LockChannel(CooldownSetter): # Modal for locking the channel
             channel = interaction.user.voice.channel  # get the channel
             permissions = {interaction.guild.default_role: discord.PermissionOverwrite(connect=False), interaction.user: discord.PermissionOverwrite(connect=True)}
             await channel.edit(overwrites=permissions)  # set the permissions
-            embed: discord.Embed = await default_embed(interaction.user)
+            embed: discord.Embed = await default_embed()
             embed.title="Update successful!",  # set the title
             embed.description="Your temporary voice channel has been successfully locked!",  # set the description
             embed.set_thumbnail(url="https://img.icons8.com/?size=100&id=znpDNZWhQe6p&format=png&color=000000")
@@ -210,7 +210,7 @@ class UnlockChannel(CooldownSetter):  # Modal for unlocking the channel
             channel = interaction.user.voice.channel  # get the channel
             permissions = {interaction.guild.default_role: discord.PermissionOverwrite(connect=True), }
             await channel.edit(overwrites=permissions)
-            embed: discord.Embed = await default_embed(interaction.user)
+            embed: discord.Embed = await default_embed()
             embed.title="Update successful!",  # set the title
             embed.description="Your temporary voice channel has been successfully unlocked!",  # set the description
             embed.set_thumbnail(url="https://img.icons8.com/?size=100&id=bmqc7DrIxfXZ&format=png&color=000000")
