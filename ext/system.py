@@ -22,12 +22,9 @@ async def send_system_message(bot: discord.Bot, content: str, alert: bool = Fals
                 await webhook.send(embed=embed, username=bot.user.name, content="<@!327880195476422656> <@!474947907913515019>")
             else: await webhook.send(embed=embed, username=bot.user.name)
 # default embed generator for commands which sets the user's color and adds a random fact to the footer (if fact=True)
-async def default_embed(user: discord.User, fact: bool = True):
+async def default_embed(fact: bool = True):
     embed = discord.Embed()
-    if user.color != discord.Color.default():
-        embed.color = user.color
-    else:
-        embed.color = 0x1abc9c
+    embed.color = 0x1abc9c
     if fact:
         async with aiohttp.ClientSession() as session:
             async with session.get("https://uselessfacts.jsph.pl/api/v2/facts/random?language=en") as response:
