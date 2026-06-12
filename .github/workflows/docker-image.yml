@@ -47,6 +47,7 @@ jobs:
           docker load -i /home/fabaxi/image.tar
           docker stop ${{ secrets.DOCKER_IMAGE_NAME }} || true
           docker rm ${{ secrets.DOCKER_IMAGE_NAME }} || true
+          docker network disconnect -f bridge ${{ secrets.DOCKER_IMAGE_NAME }} || true
           docker run -d \
             --env-file /home/fabaxi/fabaxi.env \
             --restart unless-stopped \
