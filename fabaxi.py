@@ -59,7 +59,8 @@ async def uptime_heartbeat():
         return
     try:
         async with aiohttp.ClientSession() as session:
-            await session.get(url)
+            async with session.get(url):
+                pass
     except Exception as e:
         logging.warning(f"Uptime Kuma heartbeat failed: {e}")
 
