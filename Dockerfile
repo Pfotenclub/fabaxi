@@ -10,10 +10,10 @@ WORKDIR /bot
 RUN apt-get update && apt-get install -y git
 RUN pip install -r requirements.txt
 ENV DOCKER=true
-ENV STATUS_UPDATE_PORT=7958
+ENV API_PORT=62299
 
 VOLUME ["/db"]
-EXPOSE 7958
+EXPOSE 62299
 
 ENTRYPOINT ["python", "fabaxi.py"]
 
