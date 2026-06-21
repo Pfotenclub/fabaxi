@@ -52,4 +52,5 @@ jobs:
             --env-file /home/fabaxi/fabaxi.env \
             --restart unless-stopped \
             -v /home/fabaxi/db:/db \
+            -p 62299:62299 \
             --name ${{ secrets.DOCKER_IMAGE_NAME }} ${{ secrets.DOCKER_IMAGE_NAME }}
