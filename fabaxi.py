@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 from ext.cache import load_random_status
 from ext.system import send_system_message
+from ext.api import ApiServer
 from db import Database
 
 
@@ -28,6 +29,8 @@ if environment == 'PROD':
 else:
     TOKEN = os.getenv('DEV_TOKEN')
     bot = commands.Bot(command_prefix='!', debug_guilds=[os.getenv("DEV_SERVER")], intents=intents)
+
+_api_server = ApiServer(bot)
 ##########################################################################
 logging.basicConfig(level=logging.WARN, format='%(asctime)s %(message)s', handlers=[logging.StreamHandler()])
 ##########################################################################
@@ -41,13 +44,21 @@ async def on_ready():
     print(bot.user.id)
     print('--------------------------------------')
     logging.info(f"{bot.user} is ready and online!")
-    await Database().init_db()
-    logging.info("Database initialized!")
+    try:
+        await Database().init_db()
+        logging.info("Database initialized!")
+    except Exception as e:
+        logging.warning(f"Database connection failed: {e}")
     await send_system_message(bot=bot, content="Bot is ready and online!")
+    await _api_server.start()
     if not change_status.is_running():
         change_status.start()
     if not uptime_heartbeat.is_running():
         uptime_heartbeat.start()
+
+@bot.event
+async def on_close():
+    await _api_server.stop()
 
 @tasks.loop(seconds=30)
 async def uptime_heartbeat():
