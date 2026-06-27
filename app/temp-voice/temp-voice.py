@@ -1,5 +1,6 @@
 import logging
 import os
+import discord
 
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -64,10 +65,14 @@ def setup(bot):  # this is called by Pycord to setup the cog
     bot.add_cog(TempVoice(bot))  # add the cog to the bot
 #################################################################
 # helper functions for creating and deleting temp voice channels
-async def createTempVoice(bot, joinToCreateParent, member):
+async def createTempVoice(bot, joinToCreateParent, member: discord.Member):
     category = bot.get_channel(joinToCreateParent)  # get the category
-    channel = await category.create_voice_channel(f"🔊・{member.display_name}'s Channel", user_limit=10)  # create the channel with 10 slots
-    await TempVoiceBackend().create_temp_voice(member.id, channel.id, member.guild.id)  # save the channel id to the database
+    channel: discord.VoiceChannel = await category.create_voice_channel(f"🔊・{member.display_name}'s Channel", user_limit=10)  # create the channel with 10 slots
+    if member.guild.premium_tier == 3: await channel.edit(bitrate=384000)  # if the server is boosted to level 3, set the bitrate to 384kbps
+    if member.guild.premium_tier == 2: await channel.edit(bitrate=256000)  # if the server is boosted to level 2, set the bitrate to 256kbps
+    if member.guild.premium_tier == 1: await channel.edit(bitrate=128000)  # if the server is boosted to level 1, set the bitrate to 128kbps
+    else: await channel.edit(bitrate=96000)  # if the server is not boosted, set the bitrate to 96kbps
+    # await TempVoiceBackend().create_temp_voice(member.id, channel.id, member.guild.id)  # save the channel id to the database
     await member.move_to(channel)  # move the member to the channel
     return channel
 
