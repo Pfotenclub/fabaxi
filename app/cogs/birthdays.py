@@ -1,20 +1,24 @@
-from datetime import date, datetime, timedelta, time
+from datetime import date, datetime, time, timedelta
 
 import discord
 from discord.ext import commands, pages, tasks
-from ext.system import default_embed
 
-from db import Database
 from db.birthdays import BirthdayBackend
+from ext.system import default_embed
+from app.core.config import (
+    BIRTHDAY_ANNOUNCEMENT_CHANNEL_ID,
+    BIRTHDAY_GUILD_ID,
+    BIRTHDAY_ROLE_ID,
+)
 
 
-class Stuff(commands.Cog):
+class Birthdays(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Bot = bot
         self.check_birthdays.start()
         self.remove_birthday_role.start()
 
-# Check if a member has birthday, give them the birthday kid role and send happy birthday message
+    # Check if a member has birthday, give them the birthday kid role and send happy birthday message
     @tasks.loop(hours=24)
     async def check_birthdays(self):
         now = datetime.now()
@@ -30,22 +34,29 @@ class Stuff(commands.Cog):
         users_with_birthday = await BirthdayBackend().get_users_with_birthday(today.day, today.month)
         for user in users_with_birthday:
             guild: discord.Guild = self.bot.get_guild(user.guild_id)
+            if not guild:
+                continue
             member = guild.get_member(user.user_id)
             if member:
-                amaunzment = guild.get_channel_or_thread(1191397658514956308)
-                birthday_role = guild.get_role(1342827586648150076)
+                amaunzment = guild.get_channel_or_thread(BIRTHDAY_ANNOUNCEMENT_CHANNEL_ID)
+                birthday_role = guild.get_role(BIRTHDAY_ROLE_ID)
                 try:
                     if user.year == 1900:
-                        await amaunzment.send(f"Happy Birthday, <@{member.id}>! :birthday: ")
-                        await member.add_roles(birthday_role)
+                        if amaunzment:
+                            await amaunzment.send(f"Happy Birthday, <@{member.id}>! :birthday: ")
+                        if birthday_role:
+                            await member.add_roles(birthday_role)
                     else:
-                        await amaunzment.send(
-                            f"Happy Birthday, <@{member.id}>! :birthday:\nYou're now {today.year - user.year} years old!")
-                        await member.add_roles(birthday_role)
+                        if amaunzment:
+                            await amaunzment.send(
+                                f"Happy Birthday, <@{member.id}>! :birthday:\nYou're now {today.year - user.year} years old!"
+                            )
+                        if birthday_role:
+                            await member.add_roles(birthday_role)
                 except Exception as e:
                     print(e)
 
-# If a user has the birthday role but it's not their birthday, remove the role
+    # If a user has the birthday role but it's not their birthday, remove the role
     @tasks.loop(hours=24)
     async def remove_birthday_role(self):
         now = datetime.now()
@@ -56,23 +67,54 @@ class Stuff(commands.Cog):
             target_datetime += timedelta(days=1)
 
         await discord.utils.sleep_until(target_datetime)
-        bd_role_members = self.bot.get_guild(1056514064081231872).get_role(1342827586648150076).members
-        for member in bd_role_members:
-            await member.remove_roles(self.bot.get_guild(1056514064081231872).get_role(1342827586648150076))
+        guild = self.bot.get_guild(BIRTHDAY_GUILD_ID)
+        if not guild:
+            return
+        birthday_role = guild.get_role(BIRTHDAY_ROLE_ID)
+        if not birthday_role:
+            return
+        for member in list(birthday_role.members):
+            await member.remove_roles(birthday_role)
 
-# Before loop functions to wait until the bot is ready
+    # Before loop functions to wait until the bot is ready
     @check_birthdays.before_loop
     async def before_check_birthdays(self):
         await self.bot.wait_until_ready()
-##############################################################
-    birthdayCommandGroup = discord.SlashCommandGroup(name="birthday", description="A selection of birthday commands.", contexts={discord.InteractionContextType.guild})
 
-    @birthdayCommandGroup.command(name="set", description="Set your birthday.", contexts={discord.InteractionContextType.guild})
-    @discord.option(name="day", description="The day of your birthday as a number. (eg. 14)", type=discord.SlashCommandOptionType.integer, required=True)
-    @discord.option(name="month", description="The month of your birthday as a number. (eg. 5 for May)", type=discord.SlashCommandOptionType.integer, required=True)
-    @discord.option(name="year", description="The year of your birthday as a number. (eg. 2000)", type=discord.SlashCommandOptionType.integer, required=False)
+    @remove_birthday_role.before_loop
+    async def before_remove_birthday_role(self):
+        await self.bot.wait_until_ready()
+
+    birthdayCommandGroup = discord.SlashCommandGroup(
+        name="birthday",
+        description="A selection of birthday commands.",
+        contexts={discord.InteractionContextType.guild},
+    )
+
+    @birthdayCommandGroup.command(
+        name="set",
+        description="Set your birthday.",
+        contexts={discord.InteractionContextType.guild},
+    )
+    @discord.option(
+        name="day",
+        description="The day of your birthday as a number. (eg. 14)",
+        type=discord.SlashCommandOptionType.integer,
+        required=True,
+    )
+    @discord.option(
+        name="month",
+        description="The month of your birthday as a number. (eg. 5 for May)",
+        type=discord.SlashCommandOptionType.integer,
+        required=True,
+    )
+    @discord.option(
+        name="year",
+        description="The year of your birthday as a number. (eg. 2000)",
+        type=discord.SlashCommandOptionType.integer,
+        required=False,
+    )
     async def setBirthday(self, ctx, day: int, month: int, year: int = 1900):
-        birthday = None
         try:
             birthday = date(year, month, day)
         except ValueError:
@@ -91,7 +133,11 @@ class Stuff(commands.Cog):
             await ctx.respond("An error occurred. Please try again later.", ephemeral=True)
             print(e)
 
-    @birthdayCommandGroup.command(name="delete", description="Delete your birthday.", contexts={discord.InteractionContextType.guild})
+    @birthdayCommandGroup.command(
+        name="delete",
+        description="Delete your birthday.",
+        contexts={discord.InteractionContextType.guild},
+    )
     async def deleteBirthday(self, ctx):
         try:
             await BirthdayBackend().delete_user_record(ctx.author.id, ctx.guild.id)
@@ -100,21 +146,31 @@ class Stuff(commands.Cog):
             await ctx.respond("An error occurred. Please try again later.", ephemeral=True)
             print(e)
 
-    @birthdayCommandGroup.command(name="view", description="View your birthday.", contexts={discord.InteractionContextType.guild})
-    @discord.option(name="user", description="The user whose birthday you want to view.", type=discord.SlashCommandOptionType.user, required=False)
+    @birthdayCommandGroup.command(
+        name="view",
+        description="View your birthday.",
+        contexts={discord.InteractionContextType.guild},
+    )
+    @discord.option(
+        name="user",
+        description="The user whose birthday you want to view.",
+        type=discord.SlashCommandOptionType.user,
+        required=False,
+    )
     async def viewBirthday(self, ctx: discord.InteractionContextType, user: discord.User = None):
         if user is None:
             user = ctx.author
-        if user.bot: return await ctx.respond("Bots don't have birthdays.")
+        if user.bot:
+            return await ctx.respond("Bots don't have birthdays.")
         embed: discord.Embed = await default_embed()
         embed.title = f"{user.display_name}'s Birthday"
-        if user.avatar: embed.set_thumbnail(url=user.avatar.url)
+        if user.avatar:
+            embed.set_thumbnail(url=user.avatar.url)
         try:
             user_record = await BirthdayBackend().get_user_record(user.id, ctx.guild.id)
 
-            if not user_record: 
+            if not user_record:
                 embed.description = "No birthday set."
-                pass
             elif user_record.year == 1900:
                 birthday = date(user_record.year, user_record.month, user_record.day)
                 embed.add_field(name=f"{user.display_name}'s Birthday", value=f"{birthday.day}. {birthday.strftime('%B')}")
@@ -122,14 +178,19 @@ class Stuff(commands.Cog):
                 birthday = date(user_record.year, user_record.month, user_record.day)
                 embed.add_field(name=f"{user.display_name}'s Birthday", value=f"{birthday.day}. {birthday.strftime('%B')} {birthday.year}")
                 age = date.today().year - birthday.year
-                if (date.today().month, date.today().day) < (birthday.month, birthday.day): age -= 1
+                if (date.today().month, date.today().day) < (birthday.month, birthday.day):
+                    age -= 1
                 embed.add_field(name="Age", value=f"{age} years")
         except Exception as e:
             embed.description = "An error occurred. Please try again later."
             print(e)
         await ctx.respond(embed=embed)
 
-    @birthdayCommandGroup.command(name="list", description="List all birthdays in the server.", contexts={discord.InteractionContextType.guild})
+    @birthdayCommandGroup.command(
+        name="list",
+        description="List all birthdays in the server.",
+        contexts={discord.InteractionContextType.guild},
+    )
     async def listBirthdays(self, ctx):
         try:
             birthdays = await BirthdayBackend().get_all_birthdays(ctx.guild.id)
@@ -142,7 +203,7 @@ class Stuff(commands.Cog):
             PAGE_SIZE = 7
             page_list = []
             for i in range(0, len(birthdays), PAGE_SIZE):
-                chunk = birthdays[i:i + PAGE_SIZE]
+                chunk = birthdays[i : i + PAGE_SIZE]
                 embed: discord.Embed = await default_embed()
                 embed.title = "Birthdays in this server"
                 for birthday in chunk:
@@ -168,6 +229,7 @@ class Stuff(commands.Cog):
             embed.description = "An error occurred while fetching birthdays. Please try again later."
             print(e)
             await ctx.respond(embed=embed)
-##############################################################
-def setup(bot):  # this is called by Pycord to setup the cog
-    bot.add_cog(Stuff(bot))  # add the cog to the bot
+
+
+def setup(bot):
+    bot.add_cog(Birthdays(bot))

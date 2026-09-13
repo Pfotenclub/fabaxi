@@ -8,10 +8,9 @@ from db.tables import RewardsTable
 from db.user_karma import UserKarma
 
 from ext.system import default_embed
+from app.core.config import IGNORED_KARMA_CHANNELS
 
 class Karma(commands.Cog):
-    logging.basicConfig(level=logging.ERROR, format='%(asctime)s %(message)s', handlers=[logging.StreamHandler()])
-
     def __init__(self, bot):
         self.bot = bot
         self.give_voice_karma.start()
@@ -27,17 +26,14 @@ class Karma(commands.Cog):
 
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
-        ignored_channels = [
-            1229062537954332782,  # commands channel
-            1337733289695514725,  # counting channel
-            1339010562964586647,  # cult leader channel
-            1462546344064586031,  # guess the number channel
-            1283842433284837396,  # burgeramt channel
-        ]
-        if (message.author.bot or message.channel.id in ignored_channels): return
+        if message.author.bot or message.channel.id in IGNORED_KARMA_CHANNELS:
+            return
 
-        await UserKarma().handle_message_karma(user_id=message.author.id, guild_id=message.guild.id,
-            timestamp=message.created_at.timestamp(), )
+        await UserKarma().handle_message_karma(
+            user_id=message.author.id,
+            guild_id=message.guild.id,
+            timestamp=message.created_at.timestamp(),
+        )
 
     @tasks.loop(minutes=1)
     async def give_voice_karma(self):
@@ -154,9 +150,7 @@ class Karma(commands.Cog):
     @discord.ext.commands.has_guild_permissions(manage_roles=True)
     async def add_reward(self, ctx, role: discord.Role, karma_needed: int):
         """Add a reward role for karma."""
-        async with self.db.get_session() as session:
-            session.add(RewardsTable(role_id=role.id, guild_id=ctx.guild.id, karma_needed=karma_needed))
-            await session.commit()
+        await UserKarma().add_reward(role.id, ctx.guild.id, karma_needed)
         await ctx.respond(f"Added {role.name} as a reward for {karma_needed} karma.")
 
     @discord.slash_command(name="remove_reward", contexts={discord.InteractionContextType.guild})
@@ -169,15 +163,14 @@ class Karma(commands.Cog):
     @discord.slash_command(name="rewards", contexts={discord.InteractionContextType.guild})
     async def list_rewards(self, ctx):
         """List all reward roles for karma."""
-        async with self.db.get_session() as session:
-            results = await session.execute(select(RewardsTable).filter_by(guild_id=ctx.guild.id))
-            rewards = results.scalars().all()
+        rewards = await UserKarma().list_rewards(ctx.guild.id)
         if not rewards:
             await ctx.respond("No rewards have been set.")
         else:
             rewards_list = "\n".join(
-                [f"{ctx.guild.get_role(reward.role_id).name}: {reward.karma_needed} karma" for reward in rewards])
-            await ctx.respond(f"Reward roles:\n{rewards_list}")
+                [f"{ctx.guild.get_role(reward.role_id).name}: {reward.karma_needed} karma" for reward in rewards if ctx.guild.get_role(reward.role_id)]
+            )
+            await ctx.respond(f"**Reward Roles:**\n{rewards_list}")
 
     @remove_reward.error
     @add_reward.error
