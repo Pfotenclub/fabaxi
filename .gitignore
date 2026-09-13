@@ -4,3 +4,5 @@ __pycache__/
 git_update.sh
 .vscode/
 data/
+context.md
+.agents/
