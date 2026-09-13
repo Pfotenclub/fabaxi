@@ -3,18 +3,46 @@ from discord.ext import commands
 import os
 import json
 import random
-import nltk
 from asyncio import sleep
-from nltk.corpus import words
-nltk.download("words")
 
-from dotenv import load_dotenv
-load_dotenv()
-environment = os.getenv("ENVIRONMENT")
-data_path = None
+from app.core.config import COUNTING_CHANNEL_ID, DATA_DIR, GTN_CHANNEL_ID
 
-if environment == "DEV": data_path = os.path.dirname(os.path.abspath(__file__))
-elif environment == "PROD": data_path = "/db"
+
+def _load_gtn_state():
+    path = os.path.join(DATA_DIR, "guessthenumber.json")
+    if not os.path.exists(path):
+        os.makedirs(DATA_DIR, exist_ok=True)
+        default_state = {"status": "stopped", "number": 0, "guesses": {}}
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(default_state, f)
+        return default_state
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _save_gtn_state(data):
+    path = os.path.join(DATA_DIR, "guessthenumber.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+
+
+def _load_count_state():
+    path = os.path.join(DATA_DIR, "count.json")
+    if not os.path.exists(path):
+        os.makedirs(DATA_DIR, exist_ok=True)
+        default_state = {"status": "stopped", "count": 0, "lastAuthor": None}
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(default_state, f)
+        return default_state
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _save_count_state(data):
+    path = os.path.join(DATA_DIR, "count.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+
 
 class Minigames(commands.Cog): # create a class for our cog that inherits from commands.Cog
     # this class is used to create a cog, which is a module that can be added to the bot
@@ -26,21 +54,17 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
     @commands.command(name="guessthenumber")
     @commands.is_owner()
     async def guessTheNumber(self, ctx: commands.Context):
-        gtnChannel = None
-        if environment == "DEV": gtnChannel = 1462546129106501837
-        elif environment == "PROD": gtnChannel = 1462546344064586031
-        if ctx.channel.id != gtnChannel:
+        if ctx.channel.id != GTN_CHANNEL_ID:
             await ctx.send("You can only start Guess The Number in the Guess The Number channel!")
             return
 
-        guessJson = None
-        with open(os.path.join(data_path, "guessthenumber.json"), "r") as file: guessJson = json.load(file)
+        guessJson = _load_gtn_state()
 
         if guessJson["status"] == "stopped":
             guessJson["status"] = "running"
             guessJson["number"] = random.randint(1, 100)
             guessJson["guesses"] = {}
-            with open(os.path.join(data_path, "guessthenumber.json"), "w") as file: json.dump(guessJson, file)
+            _save_gtn_state(guessJson)
             await ctx.send("Guess The Number has started! Try to guess the number between 1 and 100!")
             await ctx.message.delete()
         elif guessJson["status"] == "running":
@@ -50,13 +74,10 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
     @commands.command(name="stopguessthenumber")
     @commands.is_owner()
     async def stopGuessTheNumber(self, ctx: commands.Context):
-        gtnChannel = None
-        if environment == "DEV": gtnChannel = 1462546129106501837
-        elif environment == "PROD": gtnChannel = 1462546344064586031
-        if ctx.channel.id != gtnChannel: return await ctx.send("You can only stop Guess The Number in the Guess The Number channel!")
+        if ctx.channel.id != GTN_CHANNEL_ID:
+            return await ctx.send("You can only stop Guess The Number in the Guess The Number channel!")
 
-        guessJson = None
-        with open(os.path.join(data_path, "guessthenumber.json"), "r") as file: guessJson = json.load(file)
+        guessJson = _load_gtn_state()
 
         if guessJson["status"] == "stopped":
             await ctx.send("Guess The Number is already stopped.")
@@ -64,20 +85,17 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             guessJson["status"] = "stopped"
             guessJson["number"] = 0
             guessJson["guesses"] = {}
-            with open(os.path.join(data_path, "guessthenumber.json"), "w") as file: json.dump(guessJson, file)
+            _save_gtn_state(guessJson)
             await ctx.send("Guess The Number has been stopped. To start it again, please use the command `!guessthenumber`.")
             await ctx.message.delete()
-##########################################################################
-# The Guess The Number Minigame Logic
-    async def guessTheNumberGame(self, message):
-        if message.author.bot: return
-        gtnChannel = None
-        if environment == "DEV": gtnChannel = self.bot.get_channel(1462546129106501837)
-        elif environment == "PROD": gtnChannel = self.bot.get_channel(1462546344064586031)
-        if message.channel != gtnChannel: return
 
-        guessJson = None
-        with open(os.path.join(data_path, "guessthenumber.json"), "r") as file: guessJson = json.load(file)
+    async def guessTheNumberGame(self, message):
+        if message.author.bot:
+            return
+        if message.channel.id != GTN_CHANNEL_ID:
+            return
+
+        guessJson = _load_gtn_state()
 
         if guessJson["status"] == "stopped": return
         if message.content == "!guessthenumber" or message.content == "!stopguessthenumber": return
@@ -94,12 +112,12 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             user_id = str(message.author.id)
             if user_id not in guessJson["guesses"]:
                 guessJson["guesses"][user_id] = 0
-                with open(os.path.join(data_path, "guessthenumber.json"), "w") as file: json.dump(guessJson, file)
+                _save_gtn_state(guessJson)
 
             if message.content.isnumeric() == False:
                 await message.add_reaction("❌")
                 guessJson["guesses"][user_id] = guessJson["guesses"].get(user_id, 0) + 1
-                with open(os.path.join(data_path, "guessthenumber.json"), "w") as file: json.dump(guessJson, file)
+                _save_gtn_state(guessJson)
                 return await message.channel.send("That's not a number! Please guess a number between `1` and `100`.")
             
             guess = int(message.content)
@@ -153,24 +171,21 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
                 guessJson["number"] = random.randint(1, 100)
                 guessJson["guesses"] = {}
                 await message.channel.send("A new round has started! Try to guess the new number between `1` and `100`!")
-            with open(os.path.join(data_path, "guessthenumber.json"), "w") as file: json.dump(guessJson, file)
+            _save_gtn_state(guessJson)
 ##########################################################################
 # Commands to Control the Counting Minigame
     @commands.command(name="counting")
     @commands.is_owner()
     async def startCounting(self, ctx: commands.Context):
-        countChannel = None
-        if environment == "DEV": countChannel = 1335743804346470411
-        elif environment == "PROD": countChannel = 1337733289695514725
-        if ctx.channel.id != countChannel: return await ctx.send("You can only start counting in the counting channel!")
+        if ctx.channel.id != COUNTING_CHANNEL_ID:
+            return await ctx.send("You can only start counting in the counting channel!")
 
-        countJson = None
-        with open(os.path.join(data_path, "count.json"), "r") as file: countJson = json.load(file)
+        countJson = _load_count_state()
         
         if countJson["status"] == "stopped":
             countJson["status"] = "starting"
             countJson["count"] = 0
-            with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
+            _save_count_state(countJson)
             await ctx.send("Counting will start soon... Please type `1` to start counting!")
             await ctx.message.delete()
         elif countJson["status"] == "running":
@@ -183,13 +198,10 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
     @commands.command(name="stopcounting")
     @commands.is_owner()
     async def stopCounting(self, ctx: commands.Context):
-        countChannel = None
-        if environment == "DEV": countChannel = 1335743804346470411
-        elif environment == "PROD": countChannel = 133773328969551472
-        if ctx.channel.id != countChannel: return await ctx.send("You can only stop counting in the counting channel!")
+        if ctx.channel.id != COUNTING_CHANNEL_ID:
+            return await ctx.send("You can only stop counting in the counting channel!")
         
-        countJson = None
-        with open(os.path.join(data_path, "count.json"), "r") as file: countJson = json.load(file)
+        countJson = _load_count_state()
 
         if countJson["status"] == "stopped":
             await ctx.send("Counting is already stopped.")
@@ -198,20 +210,17 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             countJson["status"] = "stopped"
             countJson["count"] = 0
             countJson["lastAuthor"] = None
-            with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
+            _save_count_state(countJson)
             await ctx.send("Counting has been stopped. To start counting again, please use the command `!counting`.")
             await ctx.message.delete()
 ##########################################################################
 # The Counting Minigame Logic
     async def countingGame(self, message):
         if message.author.bot: return
-        countChannel = None
-        if environment == "DEV": countChannel = self.bot.get_channel(1335743804346470411)
-        elif environment == "PROD": countChannel = self.bot.get_channel(1337733289695514725)
-        if message.channel != countChannel: return
+        if message.channel.id != COUNTING_CHANNEL_ID:
+            return
 
-        countJson = None
-        with open(os.path.join(data_path, "count.json"), "r") as file: countJson = json.load(file)
+        countJson = _load_count_state()
         
         if countJson["status"] == "stopped": return
         if message.content.startswith("?") or message.content == "!counting" or message.content == "!stopcounting": return
@@ -222,7 +231,7 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
             countJson["status"] = "running"
             countJson["count"] = 1
             countJson["lastAuthor"] = message.author.id
-            with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
+            _save_count_state(countJson)
             await message.add_reaction("✅")
         elif countJson["status"] == "running":
             if message.content.isnumeric() == False: 
@@ -231,7 +240,7 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
                 countJson["count"] = 0
                 countJson["lastAuthor"] = message.author.id
                 countJson["status"] = "starting"
-                with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
+                _save_count_state(countJson)
 
             elif message.author.id == countJson["lastAuthor"]:
                 await message.add_reaction("❌")
@@ -239,7 +248,7 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
                 countJson["count"] = 0
                 countJson["lastAuthor"] = message.author.id
                 countJson["status"] = "starting"
-                with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
+                _save_count_state(countJson)
                 
             elif int(message.content) != countJson["count"] + 1:
                 await message.add_reaction("❌")
@@ -247,13 +256,13 @@ class Minigames(commands.Cog): # create a class for our cog that inherits from c
                 countJson["count"] = 0
                 countJson["lastAuthor"] = message.author.id
                 countJson["status"] = "starting"
-                with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
+                _save_count_state(countJson)
 
             else:
                 await message.add_reaction("✅")
                 countJson["count"] += 1
                 countJson["lastAuthor"] = message.author.id
-                with open(os.path.join(data_path, "count.json"), "w") as file: json.dump(countJson, file)
+                _save_count_state(countJson)
 ##########################################################################
     @discord.Cog.listener("on_message")
     async def on_message(self, message):

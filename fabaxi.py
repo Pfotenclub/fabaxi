@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from pathlib import Path
 import random
 
 import aiohttp
@@ -38,7 +39,7 @@ else:
 
 _api_server = ApiServer(bot)
 ##########################################################################
-logging.basicConfig(level=logging.WARN, format='%(asctime)s %(message)s', handlers=[logging.StreamHandler()])
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', handlers=[logging.StreamHandler()])
 ##########################################################################
 
 @bot.event
@@ -89,17 +90,20 @@ async def change_status():
     await bot.change_presence(activity=discord.CustomActivity(name=new_status))
 
 if __name__ == '__main__':
-    # Command Handler
-    for i in ["commands", "events", "temp-voice", "minigames", "admin_commands"]:
-        if os.path.isdir(f"app/{i}"):
-            for j in os.listdir(f"app/{i}"):
-                if j.endswith(".py"):
-                    try:
-                        bot.load_extension(f"app.{i}.{j[:-3]}")
-                    except Exception as error:
-                        logging.error(f'{j} could not be loaded. [{error}]')
-                    else:
-                        logging.error(f"{j} was loaded correctly")
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+    # Load Cogs dynamically from app/cogs
+    cogs_dir = Path("app/cogs")
+    if cogs_dir.is_dir():
+        for cog_file in sorted(cogs_dir.glob("*.py")):
+            if cog_file.name.startswith("__"):
+                continue
+            module_name = f"app.cogs.{cog_file.stem}"
+            try:
+                bot.load_extension(module_name)
+            except Exception as error:
+                logging.error(f"{cog_file.name} could not be loaded: [{error}]")
+            else:
+                logging.info(f"{cog_file.name} was loaded correctly")
     
     bot.run(TOKEN)
