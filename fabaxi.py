@@ -39,7 +39,7 @@ else:
 
 _api_server = ApiServer(bot)
 ##########################################################################
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', handlers=[logging.StreamHandler()])
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(message)s', handlers=[logging.StreamHandler()])
 ##########################################################################
 
 @bot.event
