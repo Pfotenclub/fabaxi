@@ -138,7 +138,7 @@ class Admin(commands.Cog):
         )
 
         await ctx.send(
-            "Hey and Welcome to Pfotenclub! Your new cult rom now on :3\n\nBefore you can start socializing (eek-, whats that >->?), here are the rules of this server.\n"
+            "Hey and Welcome to Pfotenclub! Your new cult from now on :3\n\nBefore you can start socializing (eek-, whats that >->?), here are the rules of this server.\n"
             "Please read them carefully and follow them, so we can all have a good time together! If you have any questions, feel free to ask the admins or moderators. Enjoy your stay! :3"
             "\n\n**P.S.** If you want to get access to the NSFW channels, please request approval in <#1310668407871508530> and wait for an admin to approve you. Thanks!"
             "\n**P.P.S.** If you want to change your role color, react to the message in <#1341782920972603453> with the color you want! If you want to remove your role color, react with ❌"
