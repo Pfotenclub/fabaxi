@@ -1,0 +1,56 @@
+# =============================
+# Fabaxi Bot Configuration
+# THIS IS ONLY AN EXAMPLE, NOT FOR PRODUCTION USE
+# TO USE IN PRODUCTION, COPY TO config.toml AND CONFIGURE IT
+# =============================
+
+[general]
+# Bot Owner / UserIDs
+# Must be in a array, but the array can only contain one index
+owner_ids = [123456789123456789]
+# Environment the bot is currently used in. Either "PROD" or "DEV"
+environment = "DEV"
+# Server ID which the bot is used in
+server_id = 123456789123456789
+# Announcement Channel ID which is used for announcements (duh)
+announcement_channel_id = 123456789123456789
+# The Channel ID of the moderator chat
+burgeramt_channel_id = 123456789123456789
+# The Channel ID of the admin chat
+admin_channel_id = 123456789123456789
+
+[minigames]
+# Channel ID of the counting minigame
+counting_channel_id = 123456789123456789
+# Channel ID of the Guess the Number minigame
+gtn_channel_id = 123456789123456789
+
+[roles]
+# Welcome Roles to assign users when they join the server
+# Must be in a array, but the array can only contain one index
+welcome = [123456789123456789]
+# Nightclub Role to check if user is already in the Nightclub
+nightclub = 123456789123456789
+# Underage Role to check if user is under age and not permitted to ask for acces into the Nightclub
+underage = 123456789123456789
+# Burgeramt Role for moderation, information, and stuff
+burgeramt = 123456789123456789
+# Birthday Role
+birthday = 123456789123456789
+
+[voice]
+# JoinToCreateParent which is the category which is used for the Temp Voice Feature
+join_to_create_parent = 123456789123456789
+# JoinToCreateVoice which is the channel people can join to create a new Temp Voice
+join_to_create_voice = 123456789123456789
+
+[karma]
+# Channel List which are to be ignored for the karma system
+# Must be in a array, but the array can only contain one index
+ignored_karma_channels = [123456789123456789]
+
+[system]
+# API Port to communicate with the API
+api_port = 12345
+# Webhook URL for Statuspage
+webhook_url = "https://discord.com/api/webhooks/123456789123456789/123456789123456789abcdefghijklmnopqrstuvwxyz"
