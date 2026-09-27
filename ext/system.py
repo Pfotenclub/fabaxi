@@ -1,10 +1,9 @@
-import os
 import aiohttp
 import discord
 from discord import Webhook
 from discord.ext import commands
 
-from app.core.config import OWNER_IDS
+from app.core.config import OWNER_IDS, WEBHOOK_URL
 
 # used to send a system message to a webhook into the channel fabaxi_systems
 async def send_system_message(bot: discord.Bot, content: str, alert: bool = False):
@@ -15,9 +14,8 @@ async def send_system_message(bot: discord.Bot, content: str, alert: bool = Fals
         embed.set_thumbnail(url=bot.user.avatar.url)
 
     async with aiohttp.ClientSession() as session:
-        webhook_url = os.getenv('WEBHOOK_URL')
-        if webhook_url:
-            webhook = Webhook.from_url(webhook_url, session=session)
+        if WEBHOOK_URL:
+            webhook = Webhook.from_url(WEBHOOK_URL, session=session)
             bot_name = bot.user.name if bot and getattr(bot, "user", None) else "Fabaxi"
             if alert:
                 embed.color = discord.Color.red()

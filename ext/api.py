@@ -4,6 +4,8 @@ import os
 import aiohttp.web
 import discord
 
+from app.core.config import API_PORT
+
 
 async def _build_embed(data: dict) -> discord.Embed:
     embed = discord.Embed(
@@ -193,13 +195,12 @@ class ApiServer:
         self._runner: aiohttp.web.AppRunner | None = None
 
     async def start(self):
-        port = int(os.getenv("API_PORT", "8080"))
         app = create_app(self._bot)
         self._runner = aiohttp.web.AppRunner(app)
         await self._runner.setup()
-        site = aiohttp.web.TCPSite(self._runner, "0.0.0.0", port)
+        site = aiohttp.web.TCPSite(self._runner, "0.0.0.0", API_PORT)
         await site.start()
-        logging.warning(f"API server listening on port {port}")
+        logging.warning(f"API server listening on port {API_PORT}")
 
     async def stop(self):
         if self._runner:

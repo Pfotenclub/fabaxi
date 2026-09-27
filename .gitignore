@@ -6,3 +6,4 @@ git_update.sh
 data/
 context.md
 .agents/
+config.toml
