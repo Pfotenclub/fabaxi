@@ -14,6 +14,8 @@ from ext.system import send_system_message
 from ext.api import ApiServer
 from db import Database
 
+from app.core.config import ENVIRONMENT, TOKEN, CURRENT_GUILD_ID
+
 
 load_dotenv()
 ##########################################################################
@@ -29,13 +31,10 @@ intents.messages = True
 intents.guilds = True
 intents.members = True
 ##########################################################################
-environment = os.getenv('ENVIRONMENT')  # get the environment variable
-if environment == 'PROD':
-    TOKEN = os.getenv('PROD_TOKEN')
+if ENVIRONMENT == 'PROD':
     bot = commands.Bot(command_prefix='!', intents=intents)
 else:
-    TOKEN = os.getenv('DEV_TOKEN')
-    bot = commands.Bot(command_prefix='!', debug_guilds=[os.getenv("DEV_SERVER")], intents=intents)
+    bot = commands.Bot(command_prefix='!', debug_guilds=[CURRENT_GUILD_ID], intents=intents)
 
 _api_server = ApiServer(bot)
 ##########################################################################

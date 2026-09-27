@@ -258,8 +258,8 @@ class TempVoice(commands.Cog):
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        parent_id = int(os.getenv("JOINTOCREATEPARENT", 0))
-        hub_voice_id = int(os.getenv("JOINTOCREATEVOICE", 0))
+        parent_id = JOIN_TO_CREATE_PARENT
+        hub_voice_id = JOIN_TO_CREATE_VOICE
 
         # Member connected to voice
         if before.channel is None:
