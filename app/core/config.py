@@ -36,6 +36,8 @@ STATUS_FILE_PATH = ASSETS_DIR / "status.json"
 # Join to Create Temporary Voice Channels
 JOIN_TO_CREATE_VOICE = cfg["voice"]["join_to_create_voice"]
 JOIN_TO_CREATE_PARENT = cfg["voice"]["join_to_create_parent"]
+JOIN_TO_CREATE_PREFIX = cfg["voice"]["join_to_create_prefix"]
+JOIN_TO_CREATE_CHANNEL_NAME = cfg["voice"]["join_to_create_channel_name"]
 
 # Welcome Roles (assigned on member join)
 WELCOME_ROLE_IDS = cfg["roles"]["welcome"]
