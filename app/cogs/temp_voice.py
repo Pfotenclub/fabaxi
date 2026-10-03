@@ -7,7 +7,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from db.temp_voice import TempVoiceBackend
-from app.core.config import JOIN_TO_CREATE_PARENT, JOIN_TO_CREATE_VOICE
+from app.core.config import JOIN_TO_CREATE_PARENT, JOIN_TO_CREATE_VOICE, JOIN_TO_CREATE_PREFIX, JOIN_TO_CREATE_CHANNEL_NAME
 from ext.system import default_embed, is_owner
 
 joinToCreateVoice = JOIN_TO_CREATE_VOICE
@@ -87,9 +87,9 @@ class RenameChannel(discord.ui.Modal):
         if channel is not None:
             try:
                 if self.children[0].value:
-                    await channel.edit(name=f"🔊・{self.children[0].value}")
+                    await channel.edit(name=f"{JOIN_TO_CREATE_PREFIX}{self.children[0].value}")
                 else:
-                    await channel.edit(name=f"🔊・{interaction.user.display_name}'s Channel")
+                    await channel.edit(name=await setChannelNameFromConfig(interaction.user))
 
                 embed: discord.Embed = await default_embed()
                 embed.title = "Update successful!"
@@ -156,7 +156,7 @@ class ClaimChannel(CooldownSetter):
                 )
 
         await TempVoiceBackend().change_channel_owner_id(userChannel.id, interaction.user.id)
-        await interaction.user.voice.channel.edit(name=f"🔊・{interaction.user.display_name}'s Channel")
+        await interaction.user.voice.channel.edit(name=await setChannelNameFromConfig(interaction.user))
 
         embed: discord.Embed = await default_embed()
         embed.title = "Temporary voice channel claimed!"
@@ -205,7 +205,7 @@ async def memberIsChannelOwner(channel_id, member_id):
 async def createTempVoice(bot, join_parent_id, member: discord.Member):
     category = bot.get_channel(join_parent_id)
     channel: discord.VoiceChannel = await category.create_voice_channel(
-        f"🔊・{member.display_name}'s Channel", user_limit=10
+        await setChannelNameFromConfig(member), user_limit=10
     )
     if member.guild.premium_tier == 3:
         await channel.edit(bitrate=384000)
@@ -227,6 +227,9 @@ async def deleteTempVoice(bot, temp_voice_id):
     await TempVoiceBackend().delete_temp_voice(temp_voice_id)
     return channel
 
+async def setChannelNameFromConfig(member: discord.Member | str):
+    display_name = getattr(member, "display_name", member)
+    return f"{JOIN_TO_CREATE_PREFIX}{JOIN_TO_CREATE_CHANNEL_NAME.format(username=display_name)}"
 
 class TempVoice(commands.Cog):
     def __init__(self, bot):

@@ -43,6 +43,12 @@ birthday = 123456789123456789
 join_to_create_parent = 123456789123456789
 # JoinToCreateVoice which is the channel people can join to create a new Temp Voice
 join_to_create_voice = 123456789123456789
+# Prefix to use for a Temp Voice Channel
+# If you wish to have a spacer between Prefix and name, you need to set it
+join_to_create_prefix = "🔊・"
+# Channel name for the Temp Voice Channel
+# Result will be Prefix + Name so if you put the example together the name will be "🔊・Wolfiii's Channel"
+join_to_create_channel_name = "{username}'s Channel"
 
 [karma]
 # Channel List which are to be ignored for the karma system
