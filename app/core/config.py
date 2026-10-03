@@ -66,3 +66,4 @@ BAN_REPORT_CHANNEL_ID = cfg["general"]["admin_channel_id"]
 # System stuff
 API_PORT = cfg["system"]["api_port"]
 WEBHOOK_URL = cfg["system"]["webhook_url"]
+MEDIA_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp', '.gif', '.mp4', '.mov', '.webm')
