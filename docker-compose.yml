@@ -1,0 +1,118 @@
+# ==============================================================================
+# Fabaxi - True Single-File Docker Compose Deployment
+# ==============================================================================
+# Dieses Docker-Compose-File ist komplett autark ("Single-File").
+# Es enthält die Container-Definition, Umgebungsvariablen und die vollständige
+# Bot-Konfiguration (TOML) als Inline-Config. Es werden keine externen Hilfsdateien
+# benötigt.
+#
+# Schnellanleitung zum Starten:
+#   1. Passe die Werte unter 'environment' und 'configs.bot_config.content' an.
+#   2. Starte den Bot mit:
+#        docker compose up -d
+#
+# Zum Aktualisieren auf den neuesten Stand:
+#   docker compose pull && docker compose up -d
+# ==============================================================================
+
+services:
+  fabaxi:
+    image: ghcr.io/pfotenclub/fabaxi:latest
+    container_name: fabaxi
+    restart: unless-stopped
+    ports:
+      - "62299:62299"
+    environment:
+      # Discord Bot Token
+      - TOKEN=YOUR_DISCORD_BOT_TOKEN_HERE
+
+      # Datenbank-Konfiguration (MySQL / MariaDB)
+      - DB_HOST=10.0.0.5
+      - DB_PORT=3306
+      - DB_NAME=fabaxi
+      - DB_USER=fabaxi
+      - DB_PW=YOUR_DATABASE_PASSWORD_HERE
+
+      # REST API & Authentifizierung
+      - API_SECRET=YOUR_API_SECRET_KEY_HERE
+
+      # Monitoring (Optional: Uptime Kuma Push URL)
+      - UPTIME_KUMA_PUSH_URL=
+
+      # Hinweis: Alternativ können Variablen auch aus einer .env-Datei geladen werden:
+      # env_file:
+      #   - .env
+
+    volumes:
+      # Persistente Daten (z.B. rolecolors.json, count.json, media_archive)
+      - fabaxi_data:/db
+      # Alternativ: Lokaler Bind-Mount auf ein Host-Verzeichnis:
+      # - ./db:/db
+
+    configs:
+      - source: bot_config
+        target: /bot/config.toml
+        mode: 0444
+
+volumes:
+  fabaxi_data:
+    name: fabaxi_data
+
+configs:
+  bot_config:
+    content: |
+      # ==============================================================================
+      # Fabaxi Bot Configuration (Inline)
+      # ==============================================================================
+
+      [general]
+      # Umgebung: Entweder "PROD" (für Produktivbetrieb) oder "DEV"
+      environment = "PROD"
+      # Discord UserIDs der Bot-Owner ("Cult Leaders")
+      owner_ids = [327880195476422656, 474947907913515019]
+      # Server ID (Guild ID)
+      server_id = 123456789123456789
+      # Ankündigungs-Kanal für Geburtstage etc.
+      announcement_channel_id = 123456789123456789
+      # Moderations-Kanal ("Burgeramt")
+      burgeramt_channel_id = 123456789123456789
+      # Admin-Kanal (für Bans / Logs)
+      admin_channel_id = 123456789123456789
+
+      [minigames]
+      # Kanal-ID für das Zähl-Minispiel
+      counting_channel_id = 123456789123456789
+      # Kanal-ID für "Guess the Number"
+      gtn_channel_id = 123456789123456789
+
+      [roles]
+      # Willkommensrollen beim Server-Beitritt (Array)
+      welcome = [123456789123456789]
+      # Nightclub-Rolle (Altersverifikation 18+)
+      nightclub = 123456789123456789
+      # Underage-Rolle (unter 18)
+      underage = 123456789123456789
+      # Team/Staff-Rolle ("Burgeramt")
+      burgeramt = 123456789123456789
+      # Geburtstags-Rolle
+      birthday = 123456789123456789
+
+      [voice]
+      # Join-to-Create Eltern-Kategorie
+      join_to_create_parent = 123456789123456789
+      # Join-to-Create Voice Hub Kanal
+      join_to_create_voice = 123456789123456789
+      # Prefix für temporäre Sprachkanäle
+      join_to_create_prefix = "🔊・"
+      # Namensformat ({username} wird durch den Namen des Erstellers ersetzt)
+      join_to_create_channel_name = "{username}'s Channel"
+
+      [karma]
+      # Kanäle, die für das Karma-System ignoriert werden (Array)
+      ignored_karma_channels = [123456789123456789]
+
+      [system]
+      # Port des internen REST-API-Servers
+      api_port = 62299
+      # Webhook URL für Systemmeldungen (#fabaxi_systems)
+      webhook_url = "https://discord.com/api/webhooks/123456789123456789/abcdefghijklmnopqrstuvwxyz"

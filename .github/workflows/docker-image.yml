@@ -1,57 +1,71 @@
-name: Docker Image CI
+name: Docker Build & Deploy
+
 permissions:
   contents: read
-  pull-requests: write
+  packages: write
 
 on:
   push:
     branches:
-      - release
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Build the Docker image
-      run: docker buildx build -t ${{ secrets.DOCKER_IMAGE_NAME }} .
-   
-    - name: Save Docker Image as Tar
-      run: docker save -o image.tar ${{ secrets.DOCKER_IMAGE_NAME }}
-    
-    - name: Set permissions
-      run: chmod 755 ./image.tar
-    
-    - name: Check file existence
-      run: ls -l ./image.tar
-    
-    - name: Copy Docker Image to SSH Server
-      uses: appleboy/scp-action@3d59448764c0f94f80ffcfea943710c44b75cb43
-      with:
-        host: ${{ secrets.SERVER_IP }}
-        username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.SSH_PORT }}
-        source: image.tar
-        target: /home/fabaxi/
-    
-    - name: Load Docker Image on SSH Server and Run
-      uses: appleboy/ssh-action@66aa4d343bf909ac4fa0ac52f4e62a9adc354c95
-      with:
-        host: ${{ secrets.SERVER_IP }}
-        username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.SSH_PORT }}
-        script: |
-          docker load -i /home/fabaxi/image.tar
-          docker stop ${{ secrets.DOCKER_IMAGE_NAME }} || true
-          docker rm ${{ secrets.DOCKER_IMAGE_NAME }} || true
-          docker network disconnect -f bridge ${{ secrets.DOCKER_IMAGE_NAME }} || true
-          docker run -d \
-            --env-file /home/fabaxi/fabaxi.env \
-            --restart unless-stopped \
-            -v /home/fabaxi/db:/db \
-            -v /home/fabaxi/config.toml:/bot/config.toml:ro \
-            -p 62299:62299 \
-            --name ${{ secrets.DOCKER_IMAGE_NAME }} ${{ secrets.DOCKER_IMAGE_NAME }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to SSH Server via Docker Compose
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd /home/fabaxi
+            # Einmalige Migration: Alten Standalone-Container stoppen falls noch aktiv
+            docker stop ${{ secrets.DOCKER_IMAGE_NAME }} || docker stop fabaxi || true
+            docker rm ${{ secrets.DOCKER_IMAGE_NAME }} || docker rm fabaxi || true
+            # Neues Image aus Registry ziehen und Compose Stack aktualisieren
+            docker compose pull
+            docker compose up -d --remove-orphans
