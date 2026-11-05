@@ -1,0 +1,98 @@
+# ==============================================================================
+# Fabaxi Bot Configuration Template (Copy to config.toml for local development)
+# ==============================================================================
+# For local development, copy this file to `config.toml` (which is gitignored)
+# and fill in your Discord server/channel/role IDs.
+#
+# In Kubernetes production, the real `config.toml` is maintained in the private
+# GitOps repository (`pfotenclub/fabaxi-gitops`) and mounted into the container
+# at `/bot/config/config.toml` via Kustomize ConfigMapGenerator.
+#
+# Sensitive credentials (TOKEN, API_SECRET, DB_PW, WEBHOOK_URL, OPENAI_API_KEY)
+# do NOT belong in this file — put them in `.env` locally or in the Kubernetes
+# Secret `fabaxi-secrets`.
+# ==============================================================================
+
+[general]
+# Bot Owner / UserIDs ("Cult Leaders")
+owner_ids = [
+    123456789012345678, # Example Owner 1
+]
+# Environment: "PROD" or "DEV" (overridden by ENVIRONMENT env var)
+environment = "DEV"
+# Server ID (Guild ID)
+server_id = 123456789012345678
+# Announcement Channel (for birthdays, etc.)
+announcement_channel_id = 123456789012345678
+# Moderation Channel ("Burgeramt")
+burgeramt_channel_id = 123456789012345678
+# Admin Channel (for ban reports and logs)
+admin_channel_id = 123456789012345678
+# Nightclub Approval Request Channel
+nightclub_approval_channel_id = 123456789012345678
+# Role Colors Reaction Channel
+role_colors_channel_id = 123456789012345678
+
+[database]
+# MySQL / MariaDB connection (password is read from DB_PW in Secret / .env)
+host = "127.0.0.1"
+port = 3306
+name = "fabaxi"
+user = "fabaxi"
+
+[roles]
+# Roles automatically assigned to new members on join
+welcome = [
+    123456789012345678, # Example Welcome Role
+]
+# Nightclub Role (18+ age verification)
+nightclub = 123456789012345678
+# Underage Role (minor, no access to nightclub)
+underage = 123456789012345678
+# Burgeramt Role (moderation and staff team)
+burgeramt = 123456789012345678
+# Birthday Role (granted for the user's birthday)
+birthday = 123456789012345678
+# Default message ID for the !role-colors reaction menu (fallback if not yet stored in DB)
+role_color_message_id = 123456789012345678
+
+[role_colors]
+# Color roles for the !role-colors command
+# Format: "Discord_Role_ID" = "Emoji"
+"123456789012345671" = "🍏"
+"123456789012345672" = "🍐"
+"123456789012345673" = "🍊"
+"123456789012345674" = "🍋"
+"0" = "❌"
+
+[voice]
+# Category ID for temporary voice channels
+join_to_create_parent = 123456789012345678
+# Voice channel ID that members join to spawn a temporary voice channel
+join_to_create_voice = 123456789012345678
+# Prefix for temporary voice channels
+join_to_create_prefix = "🔊・"
+# Naming template ({username} is replaced with the member's display name)
+join_to_create_channel_name = "{username}'s Channel"
+
+[minigames]
+# Counting channel ID
+counting_channel_id = 123456789012345678
+# Guess the Number channel ID
+gtn_channel_id = 123456789012345678
+
+[karma]
+# Custom Upvote / Downvote reaction emoji IDs
+upvote_emoji_id = 123456789012345678
+downvote_emoji_id = 123456789012345679
+# Channels ignored by Karma tracking
+ignored_karma_channels = [
+    123456789012345678, # commands channel
+]
+
+[system]
+# Port for internal REST API & Kubernetes Probes (/healthz, /readyz)
+api_port = 62299
+# Log level (DEBUG, INFO, WARNING, ERROR)
+log_level = "INFO"
+

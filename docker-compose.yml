@@ -1,0 +1,58 @@
+# ==============================================================================
+# Fabaxi - Local Development & Testing Stack (Docker Compose)
+# ==============================================================================
+# Starts a local MariaDB test database alongside a locally built, stateless,
+# read-only Fabaxi container (matching the Kubernetes production constraints).
+#
+# Usage:
+#   1. Put your local test TOKEN in .env (e.g. TOKEN=..., ENVIRONMENT=DEV)
+#   2. Run:
+#        docker compose up --build
+# ==============================================================================
+
+services:
+  db:
+    image: mariadb:11.4
+    container_name: fabaxi-dev-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: devrootpassword
+      MARIADB_DATABASE: fabaxi
+      MARIADB_USER: fabaxi
+      MARIADB_PASSWORD: devpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_dev_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  fabaxi:
+    build: .
+    container_name: fabaxi-dev
+    restart: unless-stopped
+    read_only: true
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "62299:62299"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-DEV}
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-fabaxi}
+      DB_USER: ${DB_USER:-fabaxi}
+      DB_PW: ${DB_PW:-devpassword}
+    volumes:
+      # Mount local config.toml (copy from config.example.toml for local dev)
+      - ./config.toml:/bot/config.toml:ro
+
+volumes:
+  mariadb_dev_data:
