@@ -60,4 +60,3 @@ cp config.example.toml config.toml
 docker compose up --build
 ```
 Health and readiness probes can be inspected at `http://localhost:62299/healthz` and `http://localhost:62299/readyz`.
-test
