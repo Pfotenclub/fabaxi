@@ -111,3 +111,5 @@ if __name__ == '__main__':
                 logging.info(f"{cog_file.name} was loaded correctly")
 
     bot.run(TOKEN)
+
+# Test
