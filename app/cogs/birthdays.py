@@ -1,4 +1,6 @@
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time
+import logging
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import discord
 from discord.ext import commands, pages, tasks
@@ -11,6 +13,18 @@ from app.core.config import (
     BIRTHDAY_ROLE_ID,
 )
 
+logger = logging.getLogger(__name__)
+
+
+def _get_local_tz():
+    try:
+        return ZoneInfo("Europe/Berlin")
+    except ZoneInfoNotFoundError:
+        return datetime.now().astimezone().tzinfo
+
+
+LOCAL_TZ = _get_local_tz()
+
 
 class Birthdays(commands.Cog):
     def __init__(self, bot):
@@ -18,63 +32,88 @@ class Birthdays(commands.Cog):
         self.check_birthdays.start()
         self.remove_birthday_role.start()
 
+    def cog_unload(self):
+        self.check_birthdays.cancel()
+        self.remove_birthday_role.cancel()
+
     # Check if a member has birthday, give them the birthday kid role and send happy birthday message
-    @tasks.loop(hours=24)
+    @tasks.loop(time=time(3, 0, tzinfo=LOCAL_TZ))
     async def check_birthdays(self):
-        now = datetime.now()
-        target_time = time(3, 0)
-        target_datetime = datetime.combine(now.date(), target_time)
+        today = datetime.now(LOCAL_TZ).date()
+        logger.info("Running check_birthdays for %s", today)
+        try:
+            users_with_birthday = await BirthdayBackend().get_users_with_birthday(today.day, today.month)
+        except Exception:
+            logger.exception("Failed to fetch birthdays from database for %s", today)
+            return
 
-        if now > target_datetime:
-            target_datetime += timedelta(days=1)
-
-        await discord.utils.sleep_until(target_datetime)
-
-        today = target_datetime.date()
-        users_with_birthday = await BirthdayBackend().get_users_with_birthday(today.day, today.month)
+        logger.info("Found %d birthday(s) for %s", len(users_with_birthday), today)
         for user in users_with_birthday:
-            guild: discord.Guild = self.bot.get_guild(user.guild_id)
+            guild: discord.Guild | None = self.bot.get_guild(user.guild_id)
             if not guild:
+                logger.warning("Guild %s not found while processing birthday for user %s", user.guild_id, user.user_id)
                 continue
+
             member = guild.get_member(user.user_id)
-            if member:
-                amaunzment = guild.get_channel_or_thread(BIRTHDAY_ANNOUNCEMENT_CHANNEL_ID)
-                birthday_role = guild.get_role(BIRTHDAY_ROLE_ID)
+            if not member:
+                logger.warning("Member %s not found in guild %s (%s)", user.user_id, guild.name, guild.id)
+                continue
+
+            amaunzment = guild.get_channel_or_thread(BIRTHDAY_ANNOUNCEMENT_CHANNEL_ID)
+            if not amaunzment:
+                logger.warning(
+                    "Birthday announcement channel %s not found in guild %s (%s)",
+                    BIRTHDAY_ANNOUNCEMENT_CHANNEL_ID,
+                    guild.name,
+                    guild.id,
+                )
+            else:
                 try:
                     if user.year == 1900:
-                        if amaunzment:
-                            await amaunzment.send(f"Happy Birthday, <@{member.id}>! :birthday: ")
-                        if birthday_role:
-                            await member.add_roles(birthday_role)
+                        await amaunzment.send(f"Happy Birthday, <@{member.id}>! :birthday: ")
                     else:
-                        if amaunzment:
-                            await amaunzment.send(
-                                f"Happy Birthday, <@{member.id}>! :birthday:\nYou're now {today.year - user.year} years old!"
-                            )
-                        if birthday_role:
-                            await member.add_roles(birthday_role)
-                except Exception as e:
-                    print(e)
+                        await amaunzment.send(
+                            f"Happy Birthday, <@{member.id}>! :birthday:\nYou're now {today.year - user.year} years old!"
+                        )
+                    logger.info("Sent birthday announcement for %s (%s) in channel %s", member, member.id, amaunzment.id)
+                except Exception:
+                    logger.exception("Failed to send birthday announcement for %s (%s)", member, member.id)
+
+            birthday_role = guild.get_role(BIRTHDAY_ROLE_ID)
+            if not birthday_role:
+                logger.warning("Birthday role %s not found in guild %s (%s)", BIRTHDAY_ROLE_ID, guild.name, guild.id)
+            else:
+                try:
+                    await member.add_roles(birthday_role, reason="Happy Birthday!")
+                    logger.info("Added birthday role %s (%s) to %s (%s)", birthday_role.name, birthday_role.id, member, member.id)
+                except Exception:
+                    logger.exception("Failed to add birthday role %s to %s (%s)", birthday_role.id, member, member.id)
 
     # If a user has the birthday role but it's not their birthday, remove the role
-    @tasks.loop(hours=24)
+    @tasks.loop(time=time(0, 0, tzinfo=LOCAL_TZ))
     async def remove_birthday_role(self):
-        now = datetime.now()
-        target_time = time(0, 0)  # one hour offset because host is in a different timezone
-        target_datetime = datetime.combine(now.date(), target_time)
+        logger.info("Running remove_birthday_role")
+        try:
+            guild = self.bot.get_guild(BIRTHDAY_GUILD_ID)
+            if not guild:
+                logger.warning("Birthday guild %s not found; skipping role removal", BIRTHDAY_GUILD_ID)
+                return
 
-        if now > target_datetime:
-            target_datetime += timedelta(days=1)
+            birthday_role = guild.get_role(BIRTHDAY_ROLE_ID)
+            if not birthday_role:
+                logger.warning("Birthday role %s not found in guild %s (%s)", BIRTHDAY_ROLE_ID, guild.name, guild.id)
+                return
 
-        await discord.utils.sleep_until(target_datetime)
-        guild = self.bot.get_guild(BIRTHDAY_GUILD_ID)
-        if not guild:
-            return
-        birthday_role = guild.get_role(BIRTHDAY_ROLE_ID)
-        if not birthday_role:
-            return
-        for member in list(birthday_role.members):
-            await member.remove_roles(birthday_role)
+            members = list(birthday_role.members)
+            logger.info("Removing birthday role %s (%s) from %d member(s)", birthday_role.name, birthday_role.id, len(members))
+            for member in members:
+                try:
+                    await member.remove_roles(birthday_role, reason="Birthday ended")
+                    logger.info("Removed birthday role %s from %s (%s)", birthday_role.id, member, member.id)
+                except Exception:
+                    logger.exception("Failed to remove birthday role %s from %s (%s)", birthday_role.id, member, member.id)
+        except Exception:
+            logger.exception("Unexpected error in remove_birthday_role")
 
     # Before loop functions to wait until the bot is ready
     @check_birthdays.before_loop
@@ -84,6 +123,14 @@ class Birthdays(commands.Cog):
     @remove_birthday_role.before_loop
     async def before_remove_birthday_role(self):
         await self.bot.wait_until_ready()
+
+    @check_birthdays.error
+    async def on_check_birthdays_error(self, error):
+        logger.exception("Unhandled error in check_birthdays loop", exc_info=error)
+
+    @remove_birthday_role.error
+    async def on_remove_birthday_role_error(self, error):
+        logger.exception("Unhandled error in remove_birthday_role loop", exc_info=error)
 
     birthdayCommandGroup = discord.SlashCommandGroup(
         name="birthday",
@@ -129,9 +176,9 @@ class Birthdays(commands.Cog):
             else:
                 await BirthdayBackend().update_user_record(ctx.author.id, ctx.guild.id, birthday)
                 await ctx.respond("Birthday updated!")
-        except Exception as e:
+        except Exception:
+            logger.exception("Failed to set/update birthday for user %s in guild %s", ctx.author.id, ctx.guild.id)
             await ctx.respond("An error occurred. Please try again later.", ephemeral=True)
-            print(e)
 
     @birthdayCommandGroup.command(
         name="delete",
@@ -142,9 +189,9 @@ class Birthdays(commands.Cog):
         try:
             await BirthdayBackend().delete_user_record(ctx.author.id, ctx.guild.id)
             await ctx.respond("Birthday deleted!")
-        except Exception as e:
+        except Exception:
+            logger.exception("Failed to set/update birthday for user %s in guild %s", ctx.author.id, ctx.guild.id)
             await ctx.respond("An error occurred. Please try again later.", ephemeral=True)
-            print(e)
 
     @birthdayCommandGroup.command(
         name="view",
@@ -181,9 +228,9 @@ class Birthdays(commands.Cog):
                 if (date.today().month, date.today().day) < (birthday.month, birthday.day):
                     age -= 1
                 embed.add_field(name="Age", value=f"{age} years")
-        except Exception as e:
+        except Exception:
+            logger.exception("Failed to view birthday for user %s in guild %s", user.id, ctx.guild.id)
             embed.description = "An error occurred. Please try again later."
-            print(e)
         await ctx.respond(embed=embed)
 
     @birthdayCommandGroup.command(
@@ -223,11 +270,11 @@ class Birthdays(commands.Cog):
             else:
                 paginator = pages.Paginator(pages=page_list)
                 await paginator.respond(ctx.interaction)
-        except Exception as e:
+        except Exception:
+            logger.exception("Failed to list birthdays in guild %s", ctx.guild.id)
             embed: discord.Embed = await default_embed()
             embed.title = "Birthdays in this server"
             embed.description = "An error occurred while fetching birthdays. Please try again later."
-            print(e)
             await ctx.respond(embed=embed)
 
 
